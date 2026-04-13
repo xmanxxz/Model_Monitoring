@@ -1,0 +1,376 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,system-ui,sans-serif)}
+.dash{padding:1.5rem}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap}
+.title{font-size:18px;font-weight:500;color:var(--color-text-primary,#222)}
+.var-select-wrap{position:relative;flex:1;min-width:220px;max-width:360px}
+.var-select{width:100%;padding:6px 32px 6px 12px;font-size:12px;font-weight:500;border:.5px solid var(--color-border-secondary,rgba(0,0,0,.25));border-radius:8px;background:var(--color-background-primary,#fff);color:var(--color-text-primary,#222);appearance:none;cursor:pointer;outline:none;transition:border-color .2s}
+.var-select:focus{border-color:#378ADD}
+.select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--color-text-secondary,#888);font-size:11px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:var(--color-background-secondary,#f5f5f3);border-radius:8px;padding:12px 14px}
+.ml{font-size:11px;color:var(--color-text-secondary,#888);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.mv{font-size:18px;font-weight:500;color:var(--color-text-primary,#222);transition:color .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv.danger{color:#A32D2D}.mv.warn{color:#854F0B}.mv.ok{color:#3B6D11}
+.chart-wrap{position:relative;border-radius:12px;overflow:hidden;border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));margin-bottom:1rem;transition:background .8s}
+.bg-scene{position:absolute;inset:0;pointer-events:none;z-index:0}
+.bg-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.scene-label{position:absolute;top:10px;right:14px;font-size:11px;font-weight:500;z-index:2;transition:color .6s;opacity:.75}
+.chart-inner{position:relative;z-index:1;padding:1.25rem 1.25rem 0}
+.ct{font-size:12px;color:var(--color-text-secondary,#666);margin-bottom:.75rem}
+.legend{display:flex;gap:16px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary,#666)}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.leg-dash{width:18px;height:0;border-top:2px dashed}
+.month-strip{position:relative;z-index:1;display:flex;overflow-x:hidden;border-top:.5px solid rgba(0,0,0,.08);transition:background .6s}
+.m-cell{flex:1;min-width:0;text-align:center;padding:5px 1px 6px;font-size:9px;cursor:pointer;transition:background .15s,color .15s;border-right:.5px solid rgba(0,0,0,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-cell:last-child{border-right:none}
+.llm-card{background:var(--color-background-primary,#fff);border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));border-radius:12px;padding:1.25rem}
+.llm-header{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+.llm-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#EAF3DE;color:#27500A;font-weight:500;transition:background .3s,color .3s}
+.llm-badge.warn{background:#FAEEDA;color:#633806}
+.llm-badge.danger{background:#FCEBEB;color:#791F1F}
+.pulse{width:8px;height:8px;border-radius:50%;background:#639922;animation:blink 1.5s infinite;transition:background .3s;flex-shrink:0}
+.pulse.warn{background:#EF9F27}.pulse.danger{background:#E24B4A}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.rbox{background:var(--color-background-secondary,#f8f7f4);border-radius:8px;padding:1rem;font-size:13px;line-height:1.7;color:var(--color-text-primary,#222);min-height:88px}
+.rl{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
+.rl.show{opacity:1;transform:translateY(0)}
+.ri{font-size:13px;margin-top:2px;flex-shrink:0;width:16px;text-align:center}
+.sbar{display:flex;gap:8px;margin-top:8px;align-items:center}
+.slabel{font-size:11px;color:var(--color-text-secondary,#666);width:64px;flex-shrink:0}
+.strack{flex:1;height:5px;background:var(--color-background-secondary,#eee);border-radius:3px;overflow:hidden}
+.sfill{height:100%;border-radius:3px;width:0;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+</style>
+
+<div class="dash">
+<h2 class="sr-only">Multi-variable feature drift monitor with seasonal backgrounds</h2>
+
+<div class="header">
+  <span class="title">Feature drift monitor</span>
+  <div class="var-select-wrap">
+    <select class="var-select" id="varSelect">
+      <option value="max_rev_bal_amt_12_mth">max_rev_bal_amt_12_mth</option>
+      <option value="slope_rev_bal_amt_12_mth">slope_rev_bal_amt_12_mth</option>
+      <option value="mean_rev_bal_amt_12_mth">mean_rev_bal_amt_12_mth</option>
+      <option value="avg_tran_amt_24_mth">avg_tran_amt_24_mth</option>
+      <option value="max_restaurant_tran_amt_6mth">max_restaurant_tran_amt_6mth</option>
+    </select>
+    <span class="select-arrow">▾</span>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="mc"><div class="ml">Dev baseline</div><div class="mv">202312</div></div>
+  <div class="mc"><div class="ml">CSI</div><div class="mv ok" id="m-csi">3.2%</div></div>
+  <div class="mc"><div class="ml">Severity</div><div class="mv ok" id="m-sev">STABLE</div></div>
+  <div class="mc"><div class="ml">Month</div><div class="mv" id="m-month" style="font-size:15px">202505</div></div>
+</div>
+
+<div class="chart-wrap" id="chart-wrap">
+  <div class="bg-scene" id="bg-scene"></div>
+  <div class="scene-label" id="scene-label"></div>
+  <div class="chart-inner">
+    <div class="ct" id="chart-title">Monthly CSI — <strong>max_rev_bal_amt_12_mth</strong> — click any month to inspect</div>
+    <div class="legend">
+      <span class="leg"><span class="leg-sq" style="background:#1565C0"></span>CSI</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#EF9F27"></span>Moderate (10%)</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#E24B4A"></span>High (20%)</span>
+    </div>
+    <div style="position:relative;width:100%;height:220px">
+      <canvas id="csiChart" role="img" aria-label="CSI line chart for selected feature variable">CSI chart for selected feature variable.</canvas>
+    </div>
+  </div>
+  <div class="month-strip" id="month-strip"></div>
+</div>
+
+<div class="llm-card">
+  <div class="llm-header">
+    <div class="pulse" id="pulse"></div>
+    <span style="font-size:13px;font-weight:500;color:var(--color-text-primary,#222)">LLM diagnostic reasoning</span>
+    <span class="llm-badge" id="llm-badge">select a month to analyze</span>
+  </div>
+  <div class="rbox" id="rbox"><span style="color:var(--color-text-tertiary,#bbb);font-size:13px">Click any month label below the chart to generate AI-powered drift diagnostics.</span></div>
+  <div id="bars" style="margin-top:.75rem;display:none">
+    <div class="sbar"><span class="slabel">Distribution</span><div class="strack"><div class="sfill" id="f-dist" style="background:#378ADD"></div></div><span style="font-size:11px;width:32px;text-align:right;color:var(--color-text-primary,#222)" id="v-dist">0%</span></div>
+    <div class="sbar" style="margin-top:5px"><span class="slabel">Macro</span><div class="strack"><div class="sfill" id="f-macro" style="background:#EF9F27"></div></div><span style="font-size:11px;width:32px;text-align:right;color:var(--color-text-primary,#222)" id="v-macro">0%</span></div>
+    <div class="sbar" style="margin-top:5px"><span class="slabel">Seasonal</span><div class="strack"><div class="sfill" id="f-seas" style="background:#1D9E75"></div></div><span style="font-size:11px;width:32px;text-align:right;color:var(--color-text-primary,#222)" id="v-seas">0%</span></div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const labels=['202505','202506','202507','202508','202509','202510','202511','202512','202601','202602','202603'];
+const shortLabels=["May'25","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan'26","Feb","Mar"];
+
+function randStable(n,base,spread){
+  const arr=[];let v=base;
+  for(let i=0;i<n;i++){v=Math.max(0.4,Math.min(base+spread,v+(Math.random()-.5)*spread*.8));arr.push(+v.toFixed(2));}
+  return arr;
+}
+const seed1=[1.1,0.9,1.2,0.8,1.0,1.1,0.9,1.0,1.1,0.9,1.0];
+const seed2=[0.8,1.1,0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,1.1];
+const seed3=[1.2,0.9,1.0,1.1,0.8,1.2,0.9,1.1,1.0,0.8,1.2];
+const seed4=[0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,0.9,1.1,0.8];
+
+const varData={
+  max_rev_bal_amt_12_mth:{
+    label:'max_rev_bal_amt_12_mth',
+    csi:[3.2,2.9,3.1,3.3,2.8,3.0,3.2,3.1,4.2,8.7,20.0],
+    diag:{
+      default:{badge:'Stable',cls:'',reasons:[
+        {ic:'✓',t:'CSI within normal range. Distribution closely tracks the Dec 2023 development baseline.'},
+        {ic:'✓',t:'No macro signal detected. Consumer revolving balance behavior consistent with baseline.'},
+        {ic:'✓',t:'Seasonality within expected bounds. No corrective action required.'}
+      ],dist:5,macro:3,seas:8},
+      '202601':{badge:'Mild shift — monitor',cls:'warn',reasons:[
+        {ic:'△',t:'CSI at 4.2%, trending upward. Early-stage drift in max revolving balance detected.'},
+        {ic:'△',t:'Fed rate cut expectations in late 2025 beginning to shift credit utilization patterns.'},
+        {ic:'✓',t:'Q1 seasonal paydown consistent with prior years. Continue monitoring.'}
+      ],dist:28,macro:35,seas:15},
+      '202602':{badge:'Moderate drift — investigate',cls:'warn',reasons:[
+        {ic:'△',t:'CSI at 8.7%, approaching 10% threshold. High-balance segment (> $20k) compressed vs. baseline.'},
+        {ic:'△',t:'Fed 25bps cut in Feb 2026 driving refinancing; balance distribution shifting leftward.'},
+        {ic:'△',t:'FICO mix shift: super-prime share up ~6pp vs. Dec 2023 baseline.'}
+      ],dist:52,macro:68,seas:24},
+      '202603':{badge:'HIGH severity — model review required',cls:'danger',reasons:[
+        {ic:'✕',t:'CSI 20.0% breaches high-severity threshold. Distribution materially shifted from Dec 2023 baseline.'},
+        {ic:'✕',t:'Cumulative Fed cuts 75bps since Jan 2026 compressed upper tail of max_rev_bal_amt_12_mth.'},
+        {ic:'△',t:'FICO migration: super-prime +12pp, thinning mid-prime 680–740. Model may misprice risk.'},
+        {ic:'△',t:'Q1 paydown amplifies signal. Recommend holdout comparison to isolate structural vs. seasonal drift.'}
+      ],dist:88,macro:92,seas:45}
+    }
+  },
+  slope_rev_bal_amt_12_mth:{
+    label:'slope_rev_bal_amt_12_mth',
+    csi:seed1,
+    diag:{
+      default:{badge:'Stable',cls:'',reasons:[
+        {ic:'✓',t:'CSI near 1% — slope of 12-month revolving balance trend is stable. No directional shift from baseline.'},
+        {ic:'✓',t:'Rate of balance growth/decline in the portfolio is consistent with Dec 2023 development window.'},
+        {ic:'✓',t:'No macro or seasonal anomaly detected. Monitor in conjunction with mean_rev_bal to detect correlated drift.'}
+      ],dist:4,macro:2,seas:6}
+    }
+  },
+  mean_rev_bal_amt_12_mth:{
+    label:'mean_rev_bal_amt_12_mth',
+    csi:seed2,
+    diag:{
+      default:{badge:'Stable',cls:'',reasons:[
+        {ic:'✓',t:'CSI near 1% — average revolving balance distribution remains close to Dec 2023 baseline.'},
+        {ic:'✓',t:'Central tendency of revolving balances has not shifted materially. Model inputs remain representative.'},
+        {ic:'✓',t:'Recommend monitoring alongside max_rev_bal_amt_12_mth which shows elevated drift signals.'}
+      ],dist:3,macro:4,seas:5}
+    }
+  },
+  avg_tran_amt_24_mth:{
+    label:'avg_tran_amt_24_mth',
+    csi:seed3,
+    diag:{
+      default:{badge:'Stable',cls:'',reasons:[
+        {ic:'✓',t:'CSI near 1% — 24-month average transaction amount is stable. Spending behavior consistent with baseline.'},
+        {ic:'✓',t:'No inflationary distortion detected in transaction amounts over the monitoring window.'},
+        {ic:'✓',t:'Longer lookback window (24 months) provides natural smoothing against short-term seasonal effects.'}
+      ],dist:5,macro:3,seas:7}
+    }
+  },
+  max_restaurant_tran_amt_6mth:{
+    label:'max_restaurant_tran_amt_6mth',
+    csi:seed4,
+    diag:{
+      default:{badge:'Stable',cls:'',reasons:[
+        {ic:'✓',t:'CSI near 1% — maximum restaurant transaction amount over 6 months is stable.'},
+        {ic:'✓',t:'Dining spend ceiling shows no material shift. No anomalous high-ticket dining inflation detected.'},
+        {ic:'✓',t:'Short lookback (6 months) makes this feature more sensitive to seasonal dining patterns — current readings normal.'}
+      ],dist:4,macro:3,seas:9}
+    }
+  }
+};
+
+const seasons={
+  '05':'spring','06':'summer_june','07':'summer','08':'summer_aug',
+  '09':'autumn','10':'autumn','11':'autumn','12':'winter',
+  '01':'winter','02':'winter','03':'spring'
+};
+const seasonStyles={
+  winter:{bg:'#daeef8',stripBg:'rgba(200,230,248,.75)',stripColor:'#185FA5',activeBg:'#185FA5',labelColor:'#0C447C',label:'Winter'},
+  spring:{bg:'#e8f5e9',stripBg:'rgba(200,240,200,.75)',stripColor:'#2E7D32',activeBg:'#388E3C',labelColor:'#1B5E20',label:'Spring'},
+  summer:{bg:'#fffde7',stripBg:'rgba(255,245,157,.75)',stripColor:'#F57F17',activeBg:'#F57F17',labelColor:'#E65100',label:'Summer'},
+  summer_june:{bg:'#e8f4fd',stripBg:'rgba(200,225,248,.75)',stripColor:'#1565C0',activeBg:'#1565C0',labelColor:'#0D47A1',label:'June'},
+  summer_aug:{bg:'#120820',stripBg:'rgba(30,10,60,.85)',stripColor:'#FDB927',activeBg:'#552583',labelColor:'#FDB927',label:'Kobe — Mamba Forever'},
+  autumn:{bg:'#fff3e0',stripBg:'rgba(255,204,128,.75)',stripColor:'#BF360C',activeBg:'#E64A19',labelColor:'#BF360C',label:'Autumn'},
+};
+function getSK(lbl){return seasons[lbl.slice(4,6)]||'summer';}
+function getST(lbl){return seasonStyles[getSK(lbl)];}
+
+function W(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#daeef8"/>${mtn(70,h*.33,190,h*.67,'#b0cfe8','#cfe6f4')}${mtn(255,h*.27,230,h*.73,'#9abcd8','#b8d4e8')}${mtn(490,h*.3,210,h*.7,'#a8cae6','#bcd8ef')}${mtn(630,h*.38,160,h*.62,'#b8d5ea','#cce2f2')}${eTree(110,h*.62,26,h*.36,'#5b8fa8','#4a7a94')}${eTree(170,h*.67,20,h*.3,'#5b8fa8','#4a7a94')}${eTree(525,h*.64,24,h*.33,'#5b8fa8','#4a7a94')}<rect x="0" y="${h*.83}" width="${w}" height="${h*.17}" fill="#d0eaf8"/>${sfx(w,h,16)}${cl(w,h*.3,'#f0f8ff',.6)}</svg>`;}
+function Sp(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#e8f5e9"/><rect y="${h*.72}" width="${w}" height="${h*.28}" fill="#a5d6a7"/>${rh(w,h,h*.7,'#a5d6a7')}${rh(w,h,h*.78,'#81c784')}${cTree(95,h*.55,22,h*.38,'#f48fb1','#e91e63')}${cTree(295,h*.5,28,h*.44,'#f06292','#e91e63')}${cTree(515,h*.53,24,h*.4,'#f48fb1','#e91e63')}${cTree(648,h*.56,18,h*.36,'#f8bbd0','#e91e63')}${petals(w,h,20)}${sunC(w*.88,h*.13,26,'#fff176')}${cl(w,h*.2,'#fff',.7)}</svg>`;}
+function Su(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#b3e5fc"/><rect y="${h*.7}" width="${w}" height="${h*.3}" fill="#81c784"/>${sunC(w*.85,h*.12,40,'#fff176')}${rays(w*.85,h*.12,40,12,'#fff9c4',.45)}${rh(w,h,h*.72,'#81c784')}${rh(w,h,h*.8,'#66bb6a')}${bTree(145,h*.58,32,h*.35,'#388e3c','#2e7d32','#795548')}${bTree(425,h*.55,36,h*.38,'#43a047','#388e3c','#5d4037')}${bTree(615,h*.6,26,h*.3,'#4caf50','#388e3c','#6d4c41')}${flowers(w,h,28)}${cl(w,h*.22,'#fff',.72)}</svg>`;}
+function SuJune(w,h){const cx=w*.5;return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#e3f0fb"/><rect y="${h*.7}" width="${w}" height="${h*.3}" fill="#c8dff0"/>${rh(w,h,h*.73,'#b0cce0')}${cl(w,h*.18,'#fff',.75)}${kneeling(cx,h*.48,h*.28*1.6,h*.38)}<text x="${cx}" y="${h*.92}" text-anchor="middle" font-size="11" fill="#0D47A1" opacity=".6" font-family="system-ui" font-weight="500">Unity — June 2020</text></svg>`;}
+function SuAug(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#120820"/>${stars(28,'#ffffff99',w,h)}${jerseyL(38,25,160,h*.72)}${dunker(w*.55,h*.05,h*.8)}<text x="${w*.5}" y="${h*.93}" text-anchor="middle" font-size="12" fill="#FDB927" opacity=".75" font-family="system-ui" font-weight="500">Mamba Forever — #24</text></svg>`;}
+function Au(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><rect width="${w}" height="${h}" fill="#ffe0b2"/><rect y="${h*.68}" width="${w}" height="${h*.32}" fill="#a1887f"/>${rh(w,h,h*.7,'#a1887f')}${rh(w,h,h*.78,'#8d6e63')}${aTree(95,h*.53,30,h*.38,'#ef6c00','#e65100','#5d4037')}${aTree(275,h*.49,36,h*.43,'#f57c00','#bf360c','#4e342e')}${aTree(485,h*.51,28,h*.38,'#ff8f00','#e65100','#5d4037')}${aTree(638,h*.55,22,h*.32,'#ef6c00','#d84315','#4e342e')}${leavesF(w,h,26)}${sunC(w*.82,h*.17,30,'#ffcc80')}${cl(w,h*.25,'#ffe0b2',.5)}</svg>`;}
+
+function mtn(x,py,w,h,f,s){const bl=py+h;return `<polygon points="${x},${bl} ${x+w/2},${py} ${x+w},${bl}" fill="${f}"/><polygon points="${x+w/2},${py} ${x+w/2-w*.12},${py+h*.18} ${x+w/2+w*.12},${py+h*.18}" fill="${s}"/>`;}
+function eTree(cx,base,rw,h,f,d){const tip=base-h;return `<polygon points="${cx},${tip} ${cx-rw},${base} ${cx+rw},${base}" fill="${f}"/><polygon points="${cx},${tip} ${cx-rw*.7},${tip+h*.35} ${cx+rw*.7},${tip+h*.35}" fill="${d}"/><rect x="${cx-rw*.15}" y="${base}" width="${rw*.3}" height="${h*.12}" fill="#7a5c3a"/>`;}
+function sfx(w,h,n){const p=[[55,28],[155,14],[285,38],[385,18],[475,33],[565,16],[655,40],[82,118],[225,98],[375,112],[505,92],[682,108],[132,198],[342,182],[592,192],[38,248],[692,238]];return p.slice(0,n).map(([x,y],i)=>{const s=4+(i%3)*2.5;return `<g transform="translate(${x},${y})"><line x1="0" y1="${-s}" x2="0" y2="${s}" stroke="white" stroke-width="1.2" opacity=".5"/><line x1="${-s}" y1="0" x2="${s}" y2="0" stroke="white" stroke-width="1.2" opacity=".5"/><line x1="${-s*.7}" y1="${-s*.7}" x2="${s*.7}" y2="${s*.7}" stroke="white" stroke-width="1" opacity=".38"/><line x1="${s*.7}" y1="${-s*.7}" x2="${-s*.7}" y2="${s*.7}" stroke="white" stroke-width="1" opacity=".38"/></g>`;}).join('');}
+function cTree(cx,base,rw,h,b1,b2){const t=h*.45;return `<rect x="${cx-rw*.12}" y="${base-t}" width="${rw*.24}" height="${t}" fill="#6d4c41"/><ellipse cx="${cx}" cy="${base-h*.62}" rx="${rw}" ry="${rw*.65}" fill="${b1}" opacity=".9"/><ellipse cx="${cx-rw*.4}" cy="${base-h*.72}" rx="${rw*.6}" ry="${rw*.4}" fill="${b2}" opacity=".7"/><ellipse cx="${cx+rw*.38}" cy="${base-h*.67}" rx="${rw*.55}" ry="${rw*.38}" fill="${b1}" opacity=".8"/>`;}
+function petals(w,h,n){const p=[[42,58],[125,28],[205,78],[315,48],[405,22],[485,68],[572,42],[662,63],[92,138],[242,128],[382,148],[524,122],[692,138],[152,208],[352,198],[552,213]];return p.slice(0,n).map(([x,y],i)=>{const s=3+(i%3)*1.5;return `<ellipse cx="${x}" cy="${y}" rx="${s*1.4}" ry="${s*.7}" fill="#f48fb1" opacity="${.32+(i%4)*.1}" transform="rotate(${(i*37)%60-30},${x},${y})"/>`;}).join('');}
+function sunC(cx,cy,r,f){return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}" opacity=".85"/>`;}
+function rays(cx,cy,r,n,f,o){return Array.from({length:n},(_,i)=>{const a=(i/n)*Math.PI*2;return `<line x1="${cx+Math.cos(a)*(r+3)}" y1="${cy+Math.sin(a)*(r+3)}" x2="${cx+Math.cos(a)*(r+14)}" y2="${cy+Math.sin(a)*(r+14)}" stroke="${f}" stroke-width="2.5" opacity="${o}"/>`;}).join('');}
+function rh(w,h,y,f){return `<path d="M0,${y} Q${w*.25},${y-h*.06} ${w*.5},${y} Q${w*.75},${y+h*.05} ${w},${y-h*.02} L${w},${h} L0,${h} Z" fill="${f}" opacity=".6"/>`;}
+function bTree(cx,base,rw,h,f,d,t){const th=h*.4;return `<rect x="${cx-rw*.12}" y="${base-th}" width="${rw*.24}" height="${th}" fill="${t}"/><ellipse cx="${cx}" cy="${base-h*.62}" rx="${rw}" ry="${rw*.72}" fill="${f}" opacity=".9"/><ellipse cx="${cx-rw*.32}" cy="${base-h*.72}" rx="${rw*.55}" ry="${rw*.42}" fill="${d}" opacity=".7"/>`;}
+function flowers(w,h,n){const c=['#ef5350','#ffee58','#fff','#f06292','#7c4dff','#ffb74d'];const p=[[50,h*.78],[105,h*.82],[172,h*.76],[242,h*.8],[312,h*.77],[382,h*.81],[452,h*.79],[522,h*.76],[592,h*.82],[662,h*.78],[82,h*.86],[202,h*.84],[352,h*.87],[502,h*.85],[642,h*.84]];return p.slice(0,n).map(([x,y],i)=>{const col=c[i%c.length];const s=4+(i%3);return `<circle cx="${x}" cy="${y}" r="${s*.7}" fill="${col}" opacity=".52"/><circle cx="${x}" cy="${y}" r="${s*.3}" fill="white" opacity=".38"/>`;}).join('');}
+function aTree(cx,base,rw,h,f,d,t){const th=h*.42;return `<rect x="${cx-rw*.12}" y="${base-th}" width="${rw*.24}" height="${th}" fill="${t}"/><ellipse cx="${cx}" cy="${base-h*.6}" rx="${rw}" ry="${rw*.7}" fill="${f}" opacity=".85"/><ellipse cx="${cx+rw*.35}" cy="${base-h*.7}" rx="${rw*.5}" ry="${rw*.38}" fill="${d}" opacity=".7"/>`;}
+function leavesF(w,h,n){const c=['#ef6c00','#bf360c','#f57f17','#d84315','#ff8f00','#e64a19'];const p=[[55,h*.74],[142,h*.72],[222,h*.76],[332,h*.73],[422,h*.75],[512,h*.72],[612,h*.74],[682,h*.76],[92,h*.82],[252,h*.8],[402,h*.83],[562,h*.81],[702,h*.8],[32,h*.88],[182,h*.86],[352,h*.89],[532,h*.87],[672,h*.85]];return p.slice(0,n).map(([x,y],i)=>{const col=c[i%c.length];const s=5+(i%3)*2;const ang=(i*47)%90-45;return `<ellipse cx="${x}" cy="${y}" rx="${s*1.3}" ry="${s*.7}" fill="${col}" opacity="${.38+(i%3)*.12}" transform="rotate(${ang},${x},${y})"/>`;}).join('');}
+function cl(w,h,f,o){const cs=[[78,h*.4,68,22],[228,h*.25,54,17],[418,h*.35,63,19],[588,h*.28,58,19]];return cs.map(([x,y,rx,ry])=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${f}" opacity="${o}"/><ellipse cx="${x+rx*.4}" cy="${y-ry*.4}" rx="${rx*.55}" ry="${ry*.7}" fill="${f}" opacity="${o}"/><ellipse cx="${x-rx*.35}" cy="${y-ry*.3}" rx="${rx*.45}" ry="${ry*.6}" fill="${f}" opacity="${o}"/>`).join('');}
+function stars(n,f,w,h){let s='';for(let i=0;i<n;i++){const x=(i*173+47)%w;const y=(i*97+31)%(h*.7);s+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${i%3===0?1.5:1}" fill="${f}"/>`;}return s;}
+function kneeling(cx,top,w,h){const hr=w*.09;return `<g opacity=".82"><circle cx="${cx}" cy="${top+hr}" r="${hr}" fill="#4a3728"/><path d="M${cx-w*.12},${top+hr*2.2} Q${cx},${top+hr*1.6} ${cx+w*.12},${top+hr*2.2} L${cx+w*.22},${top+h*.55} Q${cx},${top+h*.48} ${cx-w*.22},${top+h*.55} Z" fill="#1565C0"/><path d="M${cx-w*.22},${top+h*.53} L${cx-w*.36},${top+h*.62} L${cx-w*.28},${top+h*.65} L${cx-w*.12},${top+h*.56} Z" fill="#1565C0"/><path d="M${cx+w*.22},${top+h*.53} L${cx+w*.36},${top+h*.62} L${cx+w*.28},${top+h*.65} L${cx+w*.12},${top+h*.56} Z" fill="#1565C0"/><path d="M${cx-w*.18},${top+h*.56} L${cx-w*.3},${top+h*.72} L${cx-w*.38},${top+h*.88} L${cx-w*.18},${top+h*.88} L${cx-w*.04},${top+h*.72} Z" fill="#0d3470"/><path d="M${cx+w*.18},${top+h*.56} L${cx+w*.08},${top+h*.72} L${cx-w*.02},${top+h*.92} L${cx+w*.18},${top+h*.92} L${cx+w*.3},${top+h*.72} Z" fill="#0d3470"/></g>`;}
+function jerseyL(x,y,w,h){const cx=x+w/2;return `<g opacity=".38"><rect x="${x}" y="${y+h*.15}" width="${w}" height="${h*.85}" rx="6" fill="#552583"/><rect x="${x+w*.25}" y="${y+h*.18}" width="${w*.5}" height="${h*.48}" rx="3" fill="#FDB927"/><text x="${cx}" y="${y+h*.5}" text-anchor="middle" font-size="${w*.28}" font-weight="bold" fill="#552583" font-family="system-ui">24</text><text x="${cx}" y="${y+h*.69}" text-anchor="middle" font-size="${w*.1}" fill="#FDB927" font-family="system-ui">BRYANT</text></g>`;}
+function dunker(x,y,h){const w=h*.52;const cx=x+w*.5;const br=h*.055;const bx=cx+w*.5,by=y+h*.12;return `<g opacity=".85"><rect x="${cx-w*.008}" y="${y}" width="${w*.016}" height="${h*.55}" fill="#FDB927" opacity=".4"/><rect x="${cx-w*.25}" y="${y+h*.54}" width="${w*.5}" height="${h*.016}" fill="#FDB927" opacity=".35"/><circle cx="${bx}" cy="${by}" r="${br}" fill="#D85A30" opacity=".9"/><path d="M${bx-br},${by} Q${bx},${by-br*1.3} ${bx+br},${by}" stroke="#7a2a00" stroke-width="1.2" fill="none" opacity=".7"/><path d="M${bx-br},${by} Q${bx},${by+br*1.3} ${bx+br},${by}" stroke="#7a2a00" stroke-width="1.2" fill="none" opacity=".7"/><line x1="${bx}" y1="${by-br}" x2="${bx}" y2="${by+br}" stroke="#7a2a00" stroke-width="1.2" opacity=".7"/><circle cx="${cx+w*.06}" cy="${y+h*.15}" r="${h*.048}" fill="#e8c090"/><path d="M${cx-w*.14},${y+h*.2} Q${cx},${y+h*.14} ${cx+w*.14},${y+h*.2} L${cx+w*.22},${y+h*.48} Q${cx},${y+h*.44} ${cx-w*.22},${y+h*.48} Z" fill="#552583"/><path d="M${cx+w*.12},${y+h*.22} Q${cx+w*.32},${y+h*.15} ${bx},${by+br}" stroke="#552583" stroke-width="${h*.022}" fill="none" stroke-linecap="round"/><path d="M${cx-w*.22},${y+h*.46} L${cx-w*.32},${y+h*.62} L${cx-w*.18},${y+h*.64} L${cx-w*.08},${y+h*.5} Z" fill="#552583"/><path d="M${cx+w*.22},${y+h*.46} L${cx+w*.18},${y+h*.63} L${cx+w*.08},${y+h*.64} L${cx-w*.04},${y+h*.5} Z" fill="#552583"/><path d="M${cx-w*.08},${y+h*.48} L${cx-w*.16},${y+h*.68} L${cx-w*.28},${y+h*.88} L${cx-w*.08},${y+h*.88} L${cx+w*.06},${y+h*.68} Z" fill="#3d1060"/><path d="M${cx+w*.08},${y+h*.48} L${cx+w*.04},${y+h*.68} L${cx-w*.08},${y+h*.92} L${cx+w*.12},${y+h*.92} L${cx+w*.24},${y+h*.68} Z" fill="#3d1060"/><text x="${cx+w*.05}" y="${y+h*.42}" text-anchor="middle" font-size="${h*.075}" fill="#FDB927" font-weight="bold" font-family="system-ui">24</text></g>`;}
+
+function ptColor(v){return v>=20?'#E24B4A':v>=10?'#EF9F27':'#1565C0';}
+let chart,animFrame,currentIdx=null,animDone=false,currentVar='max_rev_bal_amt_12_mth';
+
+function buildScene(lbl){
+  const sk=getSK(lbl);const st=seasonStyles[sk];
+  const wrap=document.getElementById('chart-wrap');
+  wrap.style.background=st.bg;
+  document.getElementById('scene-label').textContent=st.label;
+  document.getElementById('scene-label').style.color=st.labelColor;
+  document.getElementById('month-strip').style.background=st.stripBg;
+  const w=wrap.offsetWidth||700;const h=320;
+  const fns={winter:W,spring:Sp,summer:Su,summer_june:SuJune,summer_aug:SuAug,autumn:Au};
+  document.getElementById('bg-scene').innerHTML=(fns[sk]||Su)(w,h);
+  return st;
+}
+
+function updateMetrics(lbl,csi){
+  document.getElementById('m-month').textContent=lbl;
+  const ce=document.getElementById('m-csi');
+  ce.textContent=csi.toFixed(1)+'%';
+  ce.className='mv '+(csi>=20?'danger':csi>=10?'warn':'ok');
+  const se=document.getElementById('m-sev');
+  if(csi>=20){se.textContent='HIGH';se.className='mv danger';}
+  else if(csi>=10){se.textContent='MODERATE';se.className='mv warn';}
+  else{se.textContent='STABLE';se.className='mv ok';}
+}
+
+function getDiag(varKey,lblKey){
+  const vd=varData[varKey];
+  if(!vd)return varData.max_rev_bal_amt_12_mth.diag.default;
+  return vd.diag[lblKey]||vd.diag.default;
+}
+
+function buildStrip(st){
+  const strip=document.getElementById('month-strip');strip.innerHTML='';
+  const csi=varData[currentVar].csi;
+  labels.forEach((lbl,i)=>{
+    const isActive=i===currentIdx;
+    const isAlert=csi[i]>=10;
+    const cell=document.createElement('div');cell.className='m-cell';
+    cell.style.color=isActive?'#fff':(isAlert?st.activeBg:st.stripColor);
+    cell.style.background=isActive?(isAlert?'#A32D2D':st.activeBg):'transparent';
+    cell.style.fontWeight=isActive?'500':'400';
+    cell.textContent=shortLabels[i];cell.title=lbl;
+    cell.onclick=()=>{if(animDone)selectMonth(i);};
+    strip.appendChild(cell);
+  });
+}
+
+function getData(n,csiArr){return csiArr.slice(0,n).concat(Array(csiArr.length-n).fill(null));}
+
+function buildChart(n,csiArr){
+  if(chart){chart.destroy();chart=null;}
+  const ctx=document.getElementById('csiChart').getContext('2d');
+  const d=getData(n,csiArr);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart=new Chart(ctx,{type:'line',data:{labels:shortLabels,datasets:[
+    {label:'CSI',data:d,borderColor:'#1565C0',backgroundColor:'rgba(21,101,192,0.08)',fill:true,tension:0.38,
+     pointRadius:d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5)),
+     pointBackgroundColor:d.map(v=>v===null?'transparent':ptColor(v)),
+     pointBorderColor:d.map((v,i)=>i===currentIdx?'#fff':'transparent'),
+     pointBorderWidth:d.map((v,i)=>i===currentIdx?2:0),borderWidth:2.5,spanGaps:false},
+    {label:'Moderate',data:Array(labels.length).fill(10),borderColor:'#EF9F27',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false},
+    {label:'High',data:Array(labels.length).fill(20),borderColor:'#E24B4A',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},
+    plugins:{legend:{display:false},tooltip:{filter:item=>item.datasetIndex===0&&item.raw!==null,callbacks:{label:c=>'CSI: '+c.parsed.y.toFixed(1)+'%'}}},
+    onClick(e,els){if(!animDone)return;if(els.length&&els[0].datasetIndex===0)selectMonth(els[0].index);},
+    scales:{x:{ticks:{color:'rgba(0,0,0,0)',maxRotation:0},grid:{display:false},border:{display:false}},
+    y:{min:0,max:yMax,ticks:{font:{size:10},color:'#666',callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}});
+}
+
+function updateChart(n,csiArr){
+  if(!chart)return;
+  const d=getData(n,csiArr);
+  chart.data.datasets[0].data=d;
+  chart.data.datasets[0].pointRadius=d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5));
+  chart.data.datasets[0].pointBorderColor=d.map((v,i)=>i===currentIdx?'#fff':'transparent');
+  chart.data.datasets[0].pointBorderWidth=d.map((v,i)=>i===currentIdx?2:0);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart.options.scales.y.max=yMax;
+  chart.update('none');
+}
+
+function selectMonth(idx){
+  currentIdx=idx;
+  const key=labels[idx];const csi=varData[currentVar].csi[idx];
+  const d=getDiag(currentVar,key);
+  document.getElementById('llm-badge').textContent=d.badge;
+  document.getElementById('llm-badge').className='llm-badge'+(d.cls?' '+d.cls:'');
+  document.getElementById('pulse').className='pulse'+(d.cls?' '+d.cls:'');
+  const rbox=document.getElementById('rbox');rbox.innerHTML='';
+  d.reasons.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='rl';
+    const ic=r.ic==='✕'?'#A32D2D':r.ic==='△'?'#854F0B':'#3B6D11';
+    el.innerHTML=`<span class="ri" style="color:${ic};font-weight:500">${r.ic}</span><span>${r.t}</span>`;
+    rbox.appendChild(el);setTimeout(()=>el.classList.add('show'),i*200);
+  });
+  document.getElementById('bars').style.display='block';
+  setTimeout(()=>{animBar('f-dist','v-dist',d.dist);animBar('f-macro','v-macro',d.macro);animBar('f-seas','v-seas',d.seas);},80);
+  updateMetrics(key,csi);
+  const st=buildScene(key);
+  updateChart(labels.length,varData[currentVar].csi);
+  buildStrip(st);
+}
+
+function animBar(fId,vId,target){
+  const fill=document.getElementById(fId),val=document.getElementById(vId);
+  fill.style.width=target+'%';let cur=0;const step=target/28;
+  const t=setInterval(()=>{cur=Math.min(cur+step,target);val.textContent=Math.round(cur)+'%';if(cur>=target)clearInterval(t);},28);
+}
+
+function animateLine(varKey){
+  cancelAnimationFrame(animFrame);animDone=false;currentIdx=null;
+  const csiArr=varData[varKey].csi;
+  let count=0;const total=labels.length;
+  buildChart(0,csiArr);
+  const st0=buildScene(labels[0]);buildStrip(st0);
+  updateMetrics(labels[0],csiArr[0]);
+  document.getElementById('rbox').innerHTML='<span style="color:var(--color-text-tertiary,#bbb);font-size:13px">Click any month label below the chart to generate AI-powered drift diagnostics.</span>';
+  document.getElementById('bars').style.display='none';
+  document.getElementById('llm-badge').textContent='select a month to analyze';
+  document.getElementById('llm-badge').className='llm-badge';
+  document.getElementById('pulse').className='pulse';
+  document.getElementById('chart-title').innerHTML=`Monthly CSI — <strong>${varKey}</strong> — click any month to inspect`;
+  const step=()=>{
+    count=Math.min(count+1,total);
+    updateChart(count,csiArr);
+    const lbl=labels[count-1];
+    const st2=buildScene(lbl);buildStrip(st2);
+    updateMetrics(lbl,csiArr[count-1]);
+    if(count<total){animFrame=requestAnimationFrame(()=>setTimeout(step,320));}
+    else{animDone=true;currentIdx=total-1;selectMonth(total-1);}
+  };
+  setTimeout(step,400);
+}
+
+document.getElementById('varSelect').addEventListener('change',function(){
+  currentVar=this.value;
+  animateLine(currentVar);
+});
+
+animateLine(currentVar);
+</script>
