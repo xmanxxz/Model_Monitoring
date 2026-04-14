@@ -1,0 +1,828 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,system-ui,sans-serif)}
+.dash{padding:1.5rem}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.title{font-size:18px;font-weight:500;color:var(--color-text-primary,#222)}
+.var-select-wrap{position:relative;flex:1;min-width:220px;max-width:360px}
+.var-select{width:100%;padding:6px 32px 6px 12px;font-size:12px;font-weight:500;border:.5px solid var(--color-border-secondary,rgba(0,0,0,.25));border-radius:8px;background:var(--color-background-primary,#fff);color:var(--color-text-primary,#222);appearance:none;cursor:pointer;outline:none;transition:border-color .2s}
+.var-select:focus{border-color:#378ADD}
+.select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--color-text-secondary,#888);font-size:11px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:var(--color-background-secondary,#f5f5f3);border-radius:8px;padding:12px 14px}
+.ml{font-size:11px;color:var(--color-text-secondary,#888);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.mv{font-size:18px;font-weight:500;color:var(--color-text-primary,#222);transition:color .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv.danger{color:#A32D2D}.mv.warn{color:#854F0B}.mv.ok{color:#3B6D11}
+.chart-wrap{position:relative;border-radius:12px;overflow:hidden;border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));margin-bottom:1rem;transition:background .8s}
+.bg-scene{position:absolute;inset:0;pointer-events:none;z-index:0}
+.bg-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.scene-label{position:absolute;top:10px;right:14px;font-size:11px;font-weight:500;z-index:2;transition:color .6s;opacity:.75}
+.chart-inner{position:relative;z-index:1;padding:1.25rem 1.25rem 0}
+.ct{font-size:12px;color:var(--color-text-secondary,#666);margin-bottom:.75rem}
+.legend{display:flex;gap:16px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary,#666)}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.leg-dash{width:18px;height:0;border-top:2px dashed}
+.month-strip{position:relative;z-index:1;display:flex;overflow-x:hidden;border-top:.5px solid rgba(0,0,0,.08);transition:background .6s}
+.m-cell{flex:1;min-width:0;text-align:center;padding:5px 1px 6px;font-size:9px;cursor:pointer;transition:background .15s,color .15s;border-right:.5px solid rgba(0,0,0,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-cell:last-child{border-right:none}
+.llm-card{background:var(--color-background-primary,#fff);border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));border-radius:14px;padding:1.25rem 1.4rem;margin-bottom:.25rem}
+.llm-header{display:flex;align-items:center;gap:10px;margin-bottom:.9rem;padding-bottom:.75rem;border-bottom:.5px solid rgba(0,0,0,.07)}
+.llm-title{font-size:11.5px;font-weight:600;color:var(--color-text-secondary,#555);text-transform:uppercase;letter-spacing:.07em}
+.llm-badge{font-size:11px;padding:3px 11px;border-radius:20px;background:#EAF3DE;color:#27500A;font-weight:600;letter-spacing:.02em;transition:background .3s,color .3s;margin-left:auto}
+.llm-badge.warn{background:#FAEEDA;color:#633806}
+.llm-badge.danger{background:#FCEBEB;color:#791F1F}
+.pulse{width:7px;height:7px;border-radius:50%;background:#52a318;animation:blink 1.5s infinite;transition:background .3s;flex-shrink:0}
+.pulse.warn{background:#EF9F27}.pulse.danger{background:#E24B4A}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.75)}}
+.diag-body{display:flex;gap:1rem}
+.diag-reasons{flex:1;min-width:0}
+.diag-bars{width:148px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:8px 12px;background:var(--color-background-secondary,#f6f5f2);border-radius:8px}
+.rbox{font-size:13px;line-height:1.75;color:var(--color-text-primary,#222);min-height:72px}
+.rl{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px;opacity:0;transform:translateY(5px);transition:opacity .35s,transform .35s}
+.rl:last-child{margin-bottom:0}
+.rl.show{opacity:1;transform:translateY(0)}
+.ri{font-size:12px;margin-top:3px;flex-shrink:0;width:16px;text-align:center;font-weight:700}
+.rt{font-size:12.5px;line-height:1.65;color:var(--color-text-primary,#333)}
+.rt strong{font-weight:600;color:#111}
+.sbar{display:flex;flex-direction:column;gap:4px}
+.slabel{font-size:10px;font-weight:600;color:var(--color-text-secondary,#777);text-transform:uppercase;letter-spacing:.05em}
+.strack{height:4px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}
+.sfill{height:100%;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.sval{font-size:11px;font-weight:600;color:var(--color-text-primary,#333);text-align:right}
+.bar-row{display:flex;align-items:center;gap:6px}
+.placeholder-msg{color:var(--color-text-tertiary,#bbb);font-size:12.5px;font-style:italic;padding:8px 0}
+/* ── Diag tables panel ──────────────────────────────────────── */
+.dtables{display:flex;gap:1rem;margin-top:1.1rem;padding-top:1rem;border-top:.5px solid rgba(0,0,0,.07);flex-wrap:wrap}
+.dtable-section{flex:1;min-width:240px}
+.dtable-heading{font-size:10.5px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.65rem;display:flex;align-items:center;gap:7px}
+.dtable-heading-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* Distribution shift — horizontal grouped bars */
+.dshift-grid{display:flex;flex-direction:column;gap:5px}
+.dshift-row{display:flex;align-items:center;gap:8px}
+.dshift-bin{font-size:10.5px;color:#666;width:62px;flex-shrink:0;text-align:right;font-variant-numeric:tabular-nums}
+.dshift-bars{flex:1;display:flex;flex-direction:column;gap:2px}
+.dshift-bar{height:9px;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1);min-width:2px}
+.dshift-legend{display:flex;gap:14px;margin-top:.55rem;padding-left:70px}
+.dshift-leg{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#666}
+.dshift-leg-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+/* Stats table */
+.stats-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.stats-tbl thead tr{border-bottom:1.5px solid rgba(0,0,0,.1)}
+.stats-tbl th{padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888}
+.stats-tbl th.col-train{color:#3a7bd5;text-align:right}
+.stats-tbl th.col-val{color:#d94f2a;text-align:right}
+.stats-tbl th.col-delta{color:#777;text-align:right}
+.stats-tbl th.col-metric{text-align:left}
+.stats-tbl tbody tr{border-bottom:.5px solid rgba(0,0,0,.05)}
+.stats-tbl tbody tr:last-child{border-bottom:none}
+.stats-tbl tbody tr:nth-child(even){background:rgba(0,0,0,.018)}
+.stats-tbl td{padding:6px 10px;font-size:12px;font-variant-numeric:tabular-nums}
+.stats-tbl td.col-metric{font-weight:600;color:#444;text-align:left}
+.stats-tbl td.col-train{color:#3a7bd5;font-weight:500;text-align:right}
+.stats-tbl td.col-val{color:#d94f2a;font-weight:500;text-align:right}
+.stats-tbl td.col-delta{font-weight:700;font-size:11.5px;text-align:right}
+.delta-up{color:#c0392b}.delta-down{color:#27ae60}.delta-neutral{color:#888}
+</style>
+
+<div class="dash">
+<h2 class="sr-only">Model Monitoring Dashboard</h2>
+
+<div class="header">
+  <span class="title">Model Monitoring</span>
+  <div class="var-select-wrap">
+    <select class="var-select" id="modelSelect">
+      <option value="pcli">PCLI Uplift Model</option>
+      <option value="balance_attrition">Balance Attrition Model</option>
+      <option value="bt_uplift">BT Uplift Model</option>
+    </select>
+    <span class="select-arrow">▾</span>
+  </div>
+  <div style="font-size:11px;font-weight:500;color:var(--color-text-secondary,#888);padding:0 4px 0 2px;flex-shrink:0">Feature</div>
+  <div class="var-select-wrap">
+    <select class="var-select" id="varSelect">
+      <option value="max_rev_bal_amt_12_mth">max_rev_bal_amt_12_mth</option>
+      <option value="slope_rev_bal_amt_12_mth">slope_rev_bal_amt_12_mth</option>
+      <option value="mean_rev_bal_amt_12_mth">mean_rev_bal_amt_12_mth</option>
+      <option value="avg_tran_amt_24_mth">avg_tran_amt_24_mth</option>
+      <option value="max_restaurant_tran_amt_6mth">max_restaurant_tran_amt_6mth</option>
+    </select>
+    <span class="select-arrow">▾</span>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="mc"><div class="ml">Dev baseline</div><div class="mv" id="m-dev">202312</div></div>
+  <div class="mc"><div class="ml">CSI</div><div class="mv ok" id="m-csi">3.2%</div></div>
+  <div class="mc"><div class="ml">Severity</div><div class="mv ok" id="m-sev">STABLE</div></div>
+  <div class="mc"><div class="ml">Month</div><div class="mv" id="m-month" style="font-size:15px">202505</div></div>
+</div>
+
+<div class="chart-wrap" id="chart-wrap">
+  <div class="bg-scene" id="bg-scene"></div>
+  <div class="scene-label" id="scene-label"></div>
+  <div class="chart-inner">
+    <div class="ct" id="chart-title">Monthly CSI — <strong>max_rev_bal_amt_12_mth</strong> — click any month to inspect</div>
+    <div class="legend">
+      <span class="leg"><span class="leg-sq" style="background:#1565C0"></span>CSI</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#EF9F27"></span>Moderate (10%)</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#E24B4A"></span>High (20%)</span>
+    </div>
+    <div style="position:relative;width:100%;height:220px">
+      <canvas id="csiChart" role="img" aria-label="CSI line chart for selected feature variable">CSI chart for selected feature variable.</canvas>
+    </div>
+  </div>
+  <div class="month-strip" id="month-strip"></div>
+</div>
+
+<div class="llm-card">
+  <div class="llm-header">
+    <div class="pulse" id="pulse"></div>
+    <span class="llm-title">AI Diagnostic Reasoning</span>
+    <span class="llm-badge" id="llm-badge">Select a month</span>
+  </div>
+  <div class="rbox" id="rbox"><span class="placeholder-msg">Click any month below the chart to generate drift diagnostics.</span></div>
+  <div id="diag-tables" style="display:none"></div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const labels=['202505','202506','202507','202508','202509','202510','202511','202512','202601','202602','202603'];
+const shortLabels=["May'25","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan'26","Feb","Mar"];
+
+function randStable(n,base,spread){
+  const arr=[];let v=base;
+  for(let i=0;i<n;i++){v=Math.max(0.4,Math.min(base+spread,v+(Math.random()-.5)*spread*.8));arr.push(+v.toFixed(2));}
+  return arr;
+}
+const seed1=[1.1,0.9,1.2,0.8,1.0,1.1,0.9,1.0,1.1,0.9,1.0];
+const seed2=[0.8,1.1,0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,1.1];
+const seed3=[1.2,0.9,1.0,1.1,0.8,1.2,0.9,1.1,1.0,0.8,1.2];
+const seed4=[0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,0.9,1.1,0.8];
+
+const varData={
+  max_rev_bal_amt_12_mth:{
+    label:'max_rev_bal_amt_12_mth',
+    csi:[3.2,2.9,3.1,3.3,2.8,3.0,3.2,3.1,4.2,8.7,20.0],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> Max revolving balance closely tracks the Dec 2023 development baseline. No corrective action required.'},
+        {ic:'✓',t:'No macro or seasonal signal. Consumer revolving balance behavior is consistent with expectations.'}
+      ],dist:4,macro:3,seas:5},
+      '202601':{badge:'Watch — Early Uptick',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 4.2%, beginning to climb.</strong> Max revolving balance trending upward — still within bounds, but the direction warrants monitoring heading into Q2 2026.'},
+        {ic:'△',t:'<strong>Why — subprime expansion beginning:</strong> 27 months of 22–28% APRs have eroded paydown capacity for lower-FICO customers. Compounding interest is now outpacing minimum payments for the &lt;600 segment, causing balances to accumulate and utilization to rise — which mechanically pushes FICO scores further down. FICO &lt;600 share rising from 2.7% baseline, increasing the weight of high-revolving-balance accounts in the portfolio average.'},
+        {ic:'✓',t:'Q1 tax-refund paydown is partially offsetting the signal. No immediate action required — flag for next review cycle and monitor subprime share trajectory.'}
+      ],dist:18,macro:28,seas:22},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 8.7%, approaching 10% threshold.</strong> FICO migration accelerating: subprime (&lt;600) surged from 2.7% → ~10%; high-quality (720+) population dropped from 51.6% → ~47%.'},
+        {ic:'△',t:'<strong>Why FICO is deteriorating:</strong> Sustained high APRs → higher minimum payments + compounding → customers unable to reduce utilization → FICO scores mechanically decline as utilization ratio rises → previously prime customers migrate into near-prime/subprime bands. Subprime accounts carry structurally higher revolving balances, pulling up portfolio-level REVOL_BAL_MAX_12M even without any new account originations.'},
+        {ic:'△',t:'<strong>Why even high-FICO customers are accumulating:</strong> Excellent (780+) accounts show REVOL_BAL_MAX_12M +37% ($1,100 → $1,511). 27 months of high rates have gradually eroded paydown capacity — creditworthy borrowers are revolving more rather than paying in full. Seasonal asymmetry amplifies: March 12-month lookback captures the Dec 2025 holiday peak without the year-end paydown offset, inflating the metric vs. the December baseline.'}
+      ],dist:45,macro:62,seas:38},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 20.0% — critical threshold breached.</strong> REVOL_BAL_MAX_12M shifted +14.7% ($1,129 → $1,295) over the 27-month Dec 2023 → Mar 2026 gap. Four compounding structural root causes.'},
+        {ic:'✕',t:'<strong>Root Cause #1 — FICO credit quality deterioration (~45%).</strong> Subprime (&lt;600) surged 2.7% → 15.4% (+12.6pp); high-quality (720+) fell 51.6% → 42.5% (−9.1pp). <em>Why:</em> Fed held rates at 22–28% APR through 2023–2025 → minimum payments no longer cover accruing interest → balances compound → utilization ratio rises mechanically → FICO scores decline → formerly prime customers migrate into near-prime and subprime bands. Subprime accounts carry structurally higher revolving balances (limited paydown capacity), directly inflating portfolio-level REVOL_BAL_MAX_12M.'},
+        {ic:'✕',t:'<strong>Root Cause #2 — High-FICO balance accumulation (~30%).</strong> Super-prime (720–780) +30%, excellent (780+) +37% ($1,100 → $1,511, +$411). <em>Why:</em> Even creditworthy borrowers faced 27 months of 22–28% APR compounding — paydown capacity eroded gradually. Behavior shifted from pay-in-full to revolving. This is structural: it builds slowly and does not self-correct when rates are cut, because customers must first recover liquidity before resuming paydown patterns.'},
+        {ic:'△',t:'<strong>Root Cause #3 — Seasonal timing wedge (~15%).</strong> <em>Why the Dec vs Mar gap inflates CSI:</em> The Dec 2023 DEV baseline captured customers mid-holiday-spend but immediately before January payoffs (year-end bonus paydowns, holiday debt resolution). The Mar 2026 OOT 12-month lookback captures the Dec 2025 holiday peak in its window but without that paydown offset — because 2026 tax refunds are smaller or redirected to debt service in the still-elevated rate environment. Net effect: March mechanically overstates the max revolving balance vs. the December snapshot.'},
+        {ic:'△',t:'<strong>Root Cause #4 — Transaction behavior / spending concentration (~10%).</strong> Mastercard Black Card mean transaction +62.3%, volume share +3.6pp. JetBlue Card −21.5%, Barclays View Mastercard −21.5%. Eating Places & Restaurants +34.9%. <em>Why Black Card is gaining share:</em> Under sustained high rates, consumers consolidate discretionary spend onto one premium rewards card to maximize cashback and points per dollar — a deliberate "wallet rationalization" behavior. The Black Card attracts this consolidation due to its rewards structure. <em>Why this inflates REVOL_BAL_MAX_12M:</em> Black Card carries higher per-transaction amounts ($600–$900+ typical vs. mid-tier $200–$400). More spend on a single high-ticket card → larger monthly statement balances → harder to pay in full each cycle → balance rolls over and revolves → feeds directly into REVOL_BAL_MAX_12M. Meanwhile mid-tier cards losing volume means fewer small transactions that were easier to pay off, further skewing the distribution rightward.'},
+        {ic:'△',t:'<strong>Recommendation:</strong> Immediate segment-level overlays for subprime band. Model was calibrated on 51.6% high-quality (720+) portfolio — now 42.5%. Rank-ordering is degraded for the subprime segment and likely miscalibrated for high-FICO revolvers. Strategic rebuild with a post-2024 development window planned within the quarter.'}
+      ],dist:88,macro:92,seas:45}
+    }
+  },
+  slope_rev_bal_amt_12_mth:{
+    label:'slope_rev_bal_amt_12_mth',
+    csi:seed1,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Slope of 12-month revolving balance trend shows no directional shift from the Dec 2023 baseline.'},
+        {ic:'✓',t:'Rate of balance change is consistent across all FICO segments. No macro or seasonal anomaly detected.'}
+      ],dist:3,macro:2,seas:4}
+    }
+  },
+  mean_rev_bal_amt_12_mth:{
+    label:'mean_rev_bal_amt_12_mth',
+    csi:seed2,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Average 12-month revolving balance distribution remains well within tolerance of the Dec 2023 baseline.'},
+        {ic:'✓',t:'Central tendency of revolving balances has not shifted materially. Model inputs remain representative.'}
+      ],dist:3,macro:3,seas:4}
+    }
+  },
+  avg_tran_amt_24_mth:{
+    label:'avg_tran_amt_24_mth',
+    csi:seed3,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 24-month average transaction amount distribution closely tracks baseline. Spending behavior is consistent.'},
+        {ic:'✓',t:'No inflationary distortion detected. The 24-month lookback provides natural smoothing against short-term seasonal effects.'}
+      ],dist:4,macro:3,seas:5}
+    }
+  },
+  max_restaurant_tran_amt_6mth:{
+    label:'max_restaurant_tran_amt_6mth',
+    csi:seed4,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum restaurant transaction amount over 6 months shows no material shift from baseline.'},
+        {ic:'✓',t:'Dining spend ceiling is stable. No anomalous high-ticket dining inflation detected. Seasonal pattern is within expected bounds.'}
+      ],dist:3,macro:2,seas:6}
+    }
+  }
+};
+
+// ── Month key → scene key (one per month) ─────────────────────────────────
+const seasons={
+  '01':'jan','02':'feb','03':'mar','04':'apr',
+  '05':'may','06':'jun','07':'jul','08':'aug',
+  '09':'sep','10':'oct','11':'nov','12':'dec'
+};
+const seasonStyles={
+  jan:{bg:'#eef4fb',stripBg:'rgba(210,228,248,.75)',stripColor:'#3a6ea8',activeBg:'#3a6ea8',labelColor:'#1e4d8c',label:'🎆 New Year'},
+  feb:{bg:'#fdf0f3',stripBg:'rgba(252,210,220,.75)',stripColor:'#c0506a',activeBg:'#c0506a',labelColor:'#8b2040',label:'💝 Valentine\'s'},
+  mar:{bg:'#edf7ee',stripBg:'rgba(196,234,200,.75)',stripColor:'#3a8a44',activeBg:'#3a8a44',labelColor:'#1c5e24',label:'☘️ St. Patrick\'s'},
+  apr:{bg:'#fdf5fb',stripBg:'rgba(240,210,240,.75)',stripColor:'#8a5a9a',activeBg:'#8a5a9a',labelColor:'#5c3070',label:'🌸 Cherry Blossom'},
+  may:{bg:'#f0faf2',stripBg:'rgba(195,238,210,.75)',stripColor:'#2e7d5a',activeBg:'#2e7d5a',labelColor:'#1a5040',label:'🌷 Mother\'s Day'},
+  jun:{bg:'#fdfbee',stripBg:'rgba(246,236,180,.75)',stripColor:'#8a7020',activeBg:'#8a7020',labelColor:'#5c4a10',label:'🎓 Graduation'},
+  jul:{bg:'#eef4fc',stripBg:'rgba(200,220,250,.75)',stripColor:'#2a5ca8',activeBg:'#2a5ca8',labelColor:'#103888',label:'🎆 4th of July'},
+  aug:{bg:'#f0eaf8',stripBg:'rgba(30,10,60,.85)',stripColor:'#FDB927',activeBg:'#552583',labelColor:'#FDB927',label:'🏀 Mamba Forever'},
+  sep:{bg:'#fff8ee',stripBg:'rgba(252,224,178,.75)',stripColor:'#b06020',activeBg:'#b06020',labelColor:'#7a3a08',label:'📚 Back to School'},
+  oct:{bg:'#fdf0e8',stripBg:'rgba(252,200,155,.75)',stripColor:'#a84010',activeBg:'#a84010',labelColor:'#6a2005',label:'🎃 Halloween'},
+  nov:{bg:'#faf2e8',stripBg:'rgba(245,218,175,.75)',stripColor:'#956030',activeBg:'#956030',labelColor:'#6a3808',label:'🦃 Thanksgiving'},
+  dec:{bg:'#eef8f2',stripBg:'rgba(190,232,210,.75)',stripColor:'#2a7a50',activeBg:'#2a7a50',labelColor:'#0e4e2c',label:'🎄 Christmas'},
+};
+function getSK(lbl){return seasons[lbl.slice(4,6)]||'jan';}
+function getST(lbl){return seasonStyles[getSK(lbl)];}
+
+// ── Shared primitive helpers ──────────────────────────────────────────────
+function _cl(w,h,f,o){const cs=[[78,h*.38,70,22],[230,h*.23,55,17],[420,h*.33,65,20],[590,h*.26,60,18]];return cs.map(([x,y,rx,ry])=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${f}" opacity="${o}"/><ellipse cx="${x+rx*.4}" cy="${y-ry*.4}" rx="${rx*.55}" ry="${ry*.7}" fill="${f}" opacity="${o}"/><ellipse cx="${x-rx*.35}" cy="${y-ry*.3}" rx="${rx*.45}" ry="${ry*.6}" fill="${f}" opacity="${o}"/>`).join('');}
+function _rh(w,h,y,f,o=.5){return `<path d="M0,${y} Q${w*.25},${y-h*.05} ${w*.5},${y} Q${w*.75},${y+h*.04} ${w},${y-h*.02} L${w},${h} L0,${h} Z" fill="${f}" opacity="${o}"/>`;}
+function _sun(cx,cy,r,f='#fff9c4'){return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}" opacity=".7"/>`;}
+function _rays(cx,cy,r,n=10,f='#fff9c4'){return Array.from({length:n},(_,i)=>{const a=(i/n)*Math.PI*2;return `<line x1="${cx+Math.cos(a)*(r+2)}" y1="${cy+Math.sin(a)*(r+2)}" x2="${cx+Math.cos(a)*(r+11)}" y2="${cy+Math.sin(a)*(r+11)}" stroke="${f}" stroke-width="2" opacity=".45"/>`;}).join('');}
+function _stars(n,w,h,f='#c8d8f0'){let s='';for(let i=0;i<n;i++){const x=(i*173+47)%w;const y=(i*97+31)%(h*.65);const r=i%4===0?2:1.2;s+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r}" fill="${f}" opacity="${i%3===0?.7:.45}"/>`;}return s;}
+function _sparkle(x,y,r,f){return `<polygon points="${x},${y-r} ${x+r*.3},${y-r*.3} ${x+r},${y} ${x+r*.3},${y+r*.3} ${x},${y+r} ${x-r*.3},${y+r*.3} ${x-r},${y} ${x-r*.3},${y-r*.3}" fill="${f}" opacity=".7"/>`;}
+function _heart(cx,cy,s,f){return `<path d="M${cx},${cy+s*.35} C${cx},${cy} ${cx-s*.6},${cy-s*.4} ${cx-s*.6},${cy-s*.15} C${cx-s*.6},${cy-s*.55} ${cx},${cy-s*.55} ${cx},${cy-s*.2} C${cx},${cy-s*.55} ${cx+s*.6},${cy-s*.55} ${cx+s*.6},${cy-s*.15} C${cx+s*.6},${cy-s*.4} ${cx},${cy} ${cx},${cy+s*.35} Z" fill="${f}" opacity=".55"/>`;}
+function _shamrock(cx,cy,r,f){return [`<circle cx="${cx}" cy="${cy-r*.8}" r="${r}" fill="${f}" opacity=".55"/>`,`<circle cx="${cx-r*.7}" cy="${cy+r*.4}" r="${r}" fill="${f}" opacity=".55"/>`,`<circle cx="${cx+r*.7}" cy="${cy+r*.4}" r="${r}" fill="${f}" opacity=".55"/>`,`<rect x="${cx-r*.15}" y="${cy}" width="${r*.3}" height="${r*1.5}" fill="${f}" opacity=".5"/>`].join('');}
+function _sakura(cx,cy,r,f){return Array.from({length:5},(_,i)=>{const a=(i/5)*Math.PI*2-Math.PI/2;return `<ellipse cx="${cx+Math.cos(a)*r*.55}" cy="${cy+Math.sin(a)*r*.55}" rx="${r*.5}" ry="${r*.28}" fill="${f}" opacity=".6" transform="rotate(${a*180/Math.PI+90},${cx+Math.cos(a)*r*.55},${cy+Math.sin(a)*r*.55})"/>`;}).join('')+`<circle cx="${cx}" cy="${cy}" r="${r*.2}" fill="#fff9f0" opacity=".8"/>`;}
+function _tulip(cx,base,h,f1,f2){const t=base-h;return `<ellipse cx="${cx-h*.14}" cy="${t+h*.35}" rx="${h*.14}" ry="${h*.32}" fill="${f1}" opacity=".7"/><ellipse cx="${cx+h*.14}" cy="${t+h*.32}" rx="${h*.14}" ry="${h*.32}" fill="${f1}" opacity=".65"/><ellipse cx="${cx}" cy="${t+h*.28}" rx="${h*.13}" ry="${h*.3}" fill="${f2}" opacity=".75"/><rect x="${cx-h*.025}" y="${t+h*.5}" width="${h*.05}" height="${h*.55}" fill="#7db87a" opacity=".7"/><path d="M${cx},${t+h*.7} Q${cx-h*.22},${t+h*.62} ${cx-h*.28},${t+h*.55}" stroke="#7db87a" stroke-width="${h*.04}" fill="none" opacity=".6"/>`;}
+function _dipCap(cx,cy,r,col,tcol){return `<rect x="${cx-r}" y="${cy}" width="${r*2}" height="${r*.8}" rx="${r*.2}" fill="${col}" opacity=".65"/><polygon points="${cx-r*1.15},${cy} ${cx+r*1.15},${cy} ${cx},${cy-r*.9}" fill="${col}" opacity=".6"/><rect x="${cx-r*.6}" y="${cy+r*.1}" width="${r*1.2}" height="${r*.45}" rx="${r*.1}" fill="${tcol}" opacity=".5"/>`;}
+function _firework(cx,cy,r,f){return Array.from({length:12},(_,i)=>{const a=(i/12)*Math.PI*2;const len=r*(0.6+Math.random()*.4);return `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*len}" y2="${cy+Math.sin(a)*len}" stroke="${f}" stroke-width="1.8" opacity="${.4+i%3*.15}" stroke-linecap="round"/>`;}).join('')+`<circle cx="${cx}" cy="${cy}" r="${r*.18}" fill="${f}" opacity=".7"/>`;}
+function _pumpkin(cx,cy,r,f='#e8975a'){const s=`M${cx-r*.9},${cy} C${cx-r*.9},${cy-r*.8} ${cx-r*.3},${cy-r} ${cx},${cy-r} C${cx+r*.3},${cy-r} ${cx+r*.9},${cy-r*.8} ${cx+r*.9},${cy} C${cx+r*.9},${cy+r*.8} ${cx+r*.3},${cy+r} ${cx},${cy+r} C${cx-r*.3},${cy+r} ${cx-r*.9},${cy+r*.8} ${cx-r*.9},${cy} Z`;return `<path d="${s}" fill="${f}" opacity=".65"/><rect x="${cx-r*.08}" y="${cy-r*1.25}" width="${r*.16}" height="${r*.35}" fill="#6a8a40" opacity=".7"/><path d="M${cx-r*.45},${cy-r*.2} L${cx-r*.22},${cy+r*.1} L${cx},${cy-r*.2} Z" fill="#6a3a00" opacity=".4"/><path d="M${cx+r*.45},${cy-r*.2} L${cx+r*.22},${cy+r*.1} L${cx},${cy-r*.2} Z" fill="#6a3a00" opacity=".4"/><path d="M${cx-r*.28},${cy+r*.25} Q${cx},${cy+r*.48} ${cx+r*.28},${cy+r*.25}" stroke="#6a3a00" stroke-width="${r*.1}" fill="none" opacity=".45"/>`;}
+function _turkey(cx,cy,r){const fc=['#d4784a','#c44444','#e8a050','#a0b840','#2a90c8'];const fs=fc.map((f,i)=>{const a=(-Math.PI*.6+(i/fc.length)*Math.PI*1.2);return `<ellipse cx="${cx+Math.cos(a)*r*.7}" cy="${cy+Math.sin(a)*r*.7}" rx="${r*.55}" ry="${r*.28}" fill="${f}" opacity=".55" transform="rotate(${a*180/Math.PI+90},${cx+Math.cos(a)*r*.7},${cy+Math.sin(a)*r*.7})"/>`;}).join('');return fs+`<circle cx="${cx}" cy="${cy+r*.15}" r="${r*.52}" fill="#b87840" opacity=".7"/><circle cx="${cx}" cy="${cy+r*.05}" r="${r*.38}" fill="#c8905a" opacity=".75"/><ellipse cx="${cx}" cy="${cy-r*.28}" rx="${r*.16}" ry="${r*.22}" fill="#d45050" opacity=".6"/><ellipse cx="${cx+r*.2}" cy="${cy-r*.12}" rx="${r*.1}" ry="${r*.06}" fill="#f0b820" opacity=".65"/>`;}
+function _xmasTree(cx,base,r,h){const t=base-h;return [`<polygon points="${cx},${t} ${cx-r*.7},${t+h*.38} ${cx+r*.7},${t+h*.38}" fill="#8abe98" opacity=".6"/>`,`<polygon points="${cx},${t+h*.26} ${cx-r*.88},${t+h*.62} ${cx+r*.88},${t+h*.62}" fill="#6aaa80" opacity=".6"/>`,`<polygon points="${cx},${t+h*.5} ${cx-r},${base} ${cx+r},${base}" fill="#529068" opacity=".6"/>`,`<rect x="${cx-r*.1}" y="${base}" width="${r*.2}" height="${h*.12}" fill="#a07040" opacity=".5"/>`,Array.from({length:16},(_,i)=>{const lx=cx+(((i*73)%100)/100-.5)*r*1.5;const ly=t+h*.3+((i*47)%100)/100*h*.65;const lc=['#f7d060','#f08080','#80c8f0','#a0e0a0','#f0a060'][i%5];return `<circle cx="${lx.toFixed(0)}" cy="${ly.toFixed(0)}" r="3" fill="${lc}" opacity=".7"/>`;}).join(''),`<polygon points="${cx},${t-r*.18} ${cx-r*.14},${t+r*.1} ${cx+r*.14},${t+r*.1}" fill="#f7d060" opacity=".75"/>`].join('');}
+function _capGown(cx,cy,r){return `<rect x="${cx-r*.35}" y="${cy+r*.1}" width="${r*.7}" height="${r*.85}" rx="${r*.1}" fill="#7090c0" opacity=".55"/><rect x="${cx-r*.55}" y="${cy+r*.08}" width="${r*1.1}" height="${r*.2}" rx="${r*.06}" fill="#7090c0" opacity=".5"/><rect x="${cx-r*.5}" y="${cy}" width="${r}" height="${r*.55}" rx="${r*.2}" fill="#8aa8d8" opacity=".5"/><circle cx="${cx}" cy="${cy-r*.35}" r="${r*.38}" fill="#7090c0" opacity=".55"/><polygon points="${cx-r*.55},${cy-r*.1} ${cx+r*.55},${cy-r*.1} ${cx+r*.5},${cy+r*.05} ${cx-r*.5},${cy+r*.05}" fill="#5a78b0" opacity=".6"/><rect x="${cx+r*.42}" y="${cy-r*.08}" width="${r*.06}" height="${r*.45}" fill="#8aa8d8" opacity=".55"/><circle cx="${cx+r*.42}" cy="${cy+r*.38}" r="${r*.1}" fill="#f7d060" opacity=".65"/>`;}
+function _backpack(cx,cy,r){return `<rect x="${cx-r*.52}" y="${cy-r*.7}" width="${r*1.04}" height="${r*1.5}" rx="${r*.18}" fill="#6098d0" opacity=".55"/><rect x="${cx-r*.38}" y="${cy-r*.5}" width="${r*.76}" height="${r*.55}" rx="${r*.1}" fill="#80b0e0" opacity=".5"/><rect x="${cx-r*.18}" y="${cy-r*.72}" width="${r*.36}" height="${r*.15}" rx="${r*.06}" fill="#4878b0" opacity=".5"/><rect x="${cx-r*.28}" y="${cy+r*.1}" width="${r*.56}" height="${r*.38}" rx="${r*.08}" fill="#80b0e0" opacity=".45"/>` + `<circle cx="${cx}" cy="${cy+r*.3}" r="${r*.08}" fill="#4878b0" opacity=".55"/>`;}
+function _jerseyL(x,y,w,h){const cx=x+w/2;return `<g opacity=".42"><rect x="${x}" y="${y+h*.15}" width="${w}" height="${h*.85}" rx="6" fill="#552583"/><rect x="${x+w*.25}" y="${y+h*.18}" width="${w*.5}" height="${h*.48}" rx="3" fill="#FDB927"/><text x="${cx}" y="${y+h*.5}" text-anchor="middle" font-size="${w*.28}" font-weight="bold" fill="#552583" font-family="system-ui">24</text><text x="${cx}" y="${y+h*.69}" text-anchor="middle" font-size="${w*.1}" fill="#FDB927" font-family="system-ui">BRYANT</text></g>`;}
+function _dunker(x,y,h){const w=h*.52;const cx=x+w*.5;const br=h*.055;const bx=cx+w*.5,by=y+h*.12;return `<g opacity=".82"><rect x="${cx-w*.008}" y="${y}" width="${w*.016}" height="${h*.55}" fill="#FDB927" opacity=".35"/><rect x="${cx-w*.25}" y="${y+h*.54}" width="${w*.5}" height="${h*.016}" fill="#FDB927" opacity=".3"/><circle cx="${bx}" cy="${by}" r="${br}" fill="#D8784a" opacity=".85"/><circle cx="${cx+w*.06}" cy="${y+h*.15}" r="${h*.048}" fill="#e8c898"/><path d="M${cx-w*.14},${y+h*.2} Q${cx},${y+h*.14} ${cx+w*.14},${y+h*.2} L${cx+w*.22},${y+h*.48} Q${cx},${y+h*.44} ${cx-w*.22},${y+h*.48} Z" fill="#552583"/><path d="M${cx+w*.12},${y+h*.22} Q${cx+w*.32},${y+h*.15} ${bx},${by+br}" stroke="#552583" stroke-width="${h*.022}" fill="none" stroke-linecap="round"/><path d="M${cx-w*.22},${y+h*.46} L${cx-w*.32},${y+h*.62} L${cx-w*.18},${y+h*.64} L${cx-w*.08},${y+h*.5} Z" fill="#552583"/><path d="M${cx+w*.22},${y+h*.46} L${cx+w*.18},${y+h*.63} L${cx+w*.08},${y+h*.64} L${cx-w*.04},${y+h*.5} Z" fill="#552583"/><path d="M${cx-w*.08},${y+h*.48} L${cx-w*.16},${y+h*.68} L${cx-w*.28},${y+h*.88} L${cx-w*.08},${y+h*.88} L${cx+w*.06},${y+h*.68} Z" fill="#3d1060"/><path d="M${cx+w*.08},${y+h*.48} L${cx+w*.04},${y+h*.68} L${cx-w*.08},${y+h*.92} L${cx+w*.12},${y+h*.92} L${cx+w*.24},${y+h*.68} Z" fill="#3d1060"/><text x="${cx+w*.05}" y="${y+h*.42}" text-anchor="middle" font-size="${h*.075}" fill="#FDB927" font-weight="bold" font-family="system-ui">24</text></g>`;}
+
+// ── 12 monthly scene renderers ────────────────────────────────────────────
+
+// JAN — New Year fireworks, dark-navy sky, light pastel
+function M01(w,h){
+  const sky=`<defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d8e8f8"/><stop offset="100%" stop-color="#eef4fb"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#jg)"/>`;
+  const buildings=[[0,h*.55,w*.12,h*.45],[w*.1,h*.5,w*.09,h*.5],[w*.22,h*.45,w*.08,h*.55],[w*.35,h*.52,w*.1,h*.48],[w*.52,h*.48,w*.07,h*.52],[w*.65,h*.5,w*.1,h*.5],[w*.8,h*.44,w*.08,h*.56],[w*.9,h*.52,w*.1,h*.48]].map(([x,y,bw,bh])=>`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="#b8c8d8" opacity=".4"/>`).join('');
+  const fw=[_firework(w*.18,h*.22,38,'#c8d8f0'),_firework(w*.42,h*.15,44,'#f0c8d8'),_firework(w*.68,h*.2,36,'#c8e8d0'),_firework(w*.82,h*.28,30,'#f8e0c0'),_firework(w*.3,h*.32,28,'#d8c8f0')].join('');
+  const sp=[_sparkle(w*.55,h*.12,10,'#f8e8a0'),_sparkle(w*.12,h*.38,7,'#f0c8d8'),_sparkle(w*.75,h*.4,8,'#c8e8d0'),_sparkle(w*.92,h*.18,6,'#d8c8f8')].join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_stars(30,w,h,'#b8cce0')}${buildings}${fw}${sp}<text x="${w*.5}" y="${h*.9}" text-anchor="middle" font-size="12" fill="#4a6a9a" opacity=".55" font-family="system-ui" font-weight="500">Happy New Year 🎆</text></svg>`;
+}
+
+// FEB — Valentine hearts, soft pink sky
+function M02(w,h){
+  const sky=`<defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fce8ee"/><stop offset="100%" stop-color="#fdf5f7"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#fg)"/>`;
+  const hearts=[[w*.1,h*.25,28],[w*.28,h*.15,20],[w*.45,h*.3,34],[w*.62,h*.18,24],[w*.78,h*.27,30],[w*.9,h*.15,18],[w*.2,h*.5,16],[w*.55,h*.52,22],[w*.85,h*.48,14]].map(([cx,cy,s])=>_heart(cx,cy,s,['#f4a0b8','#e8c0cc','#f8b0c8','#f0a0c0'][Math.round(cx/80)%4])).join('');
+  const roses=[[w*.15,h*.72],[w*.38,h*.68],[w*.62,h*.72],[w*.85,h*.68]].map(([cx,cy])=>`<circle cx="${cx}" cy="${cy}" r="14" fill="#e8a0b8" opacity=".5"/><circle cx="${cx}" cy="${cy}" r="8" fill="#f0b8c8" opacity=".55"/><circle cx="${cx}" cy="${cy}" r="4" fill="#f8d0dc" opacity=".6"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${hearts}${_rh(w,h,h*.65,'#f0b8cc',.4)}${_rh(w,h,h*.75,'#e8a8bc',.4)}${roses}<text x="${w*.5}" y="${h*.9}" text-anchor="middle" font-size="12" fill="#a84060" opacity=".55" font-family="system-ui" font-weight="500">Valentine's Day 💝</text></svg>`;
+}
+
+// MAR — St. Patrick's Day, shamrocks & rolling green hills
+function M03(w,h){
+  const sky=`<defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e4f5e6"/><stop offset="100%" stop-color="#f2faf3"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#mg)"/>`;
+  const hills=`${_rh(w,h,h*.6,'#a8d8a8',.5)}${_rh(w,h,h*.7,'#90c890',.5)}${_rh(w,h,h*.8,'#78b878',.45)}`;
+  const shs=[[w*.08,h*.38],[w*.22,h*.28],[w*.38,h*.42],[w*.55,h*.25],[w*.7,h*.38],[w*.85,h*.3],[w*.15,h*.6],[w*.48,h*.65],[w*.78,h*.62]].map(([cx,cy])=>_shamrock(cx,cy,14,'#60aa60')).join('');
+  const rainbow=`<defs><radialGradient id="rbow" cx="50%" cy="100%" r="60%"><stop offset="0%" stop-color="transparent"/><stop offset="55%" stop-color="#f8e8a0" stop-opacity=".25"/><stop offset="65%" stop-color="#f0c0a0" stop-opacity=".2"/><stop offset="75%" stop-color="#f0a0c0" stop-opacity=".18"/><stop offset="85%" stop-color="#c0b8f0" stop-opacity=".15"/><stop offset="95%" stop-color="transparent"/></radialGradient></defs><ellipse cx="${w*.5}" cy="${h}" rx="${w*.75}" ry="${h*.55}" fill="url(#rbow)"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${rainbow}${_cl(w,h,'#fff',.6)}${hills}${shs}<text x="${w*.5}" y="${h*.9}" text-anchor="middle" font-size="12" fill="#2a7a30" opacity=".55" font-family="system-ui" font-weight="500">St. Patrick's Day ☘️</text></svg>`;
+}
+
+// APR — Cherry blossom, soft lavender sky
+function M04(w,h){
+  const sky=`<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5eefa"/><stop offset="100%" stop-color="#fdf8fe"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#ag)"/>`;
+  const ground=`${_rh(w,h,h*.68,'#e8d8f0',.4)}${_rh(w,h,h*.78,'#d8c8e8',.38)}`;
+  const trees=[[w*.12,h*.62,18,h*.38],[w*.32,h*.58,22,h*.42],[w*.56,h*.62,20,h*.38],[w*.75,h*.6,24,h*.4],[w*.92,h*.65,16,h*.35]].map(([cx,base,rw,th])=>{const trunk=`<rect x="${cx-rw*.12}" y="${base-th*.4}" width="${rw*.24}" height="${th*.4}" fill="#b09080" opacity=".4"/>`;const blooms=Array.from({length:8},(_,i)=>{const a=(i/8)*Math.PI*2;const bx=cx+Math.cos(a)*rw*.55;const by=(base-th*.6)+Math.sin(a)*rw*.4;return _sakura(bx,by,rw*.36,'#f0c0d0');}).join('')+_sakura(cx,base-th*.7,rw*.42,'#f8d0dc');return trunk+blooms;}).join('');
+  const petals=Array.from({length:24},(_,i)=>{const px=(i*113)%w;const py=h*.1+(i*67)%(h*.7);return `<ellipse cx="${px}" cy="${py}" rx="4" ry="2.5" fill="#f0b8cc" opacity="${.2+i%3*.1}" transform="rotate(${(i*37)%60},${px},${py})"/>`;}).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_cl(w,h,'#fff',.55)}${ground}${trees}${petals}<text x="${w*.5}" y="${h*.92}" text-anchor="middle" font-size="12" fill="#8058a0" opacity=".55" font-family="system-ui" font-weight="500">Cherry Blossom 🌸</text></svg>`;
+}
+
+// MAY — Mother's Day tulips, warm green meadow
+function M05(w,h){
+  const sky=`<defs><linearGradient id="myg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f5ea"/><stop offset="100%" stop-color="#f5fdf6"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#myg)"/>`;
+  const ground=`${_rh(w,h,h*.64,'#b8dab8',.48)}${_rh(w,h,h*.76,'#a0c8a0',.45)}`;
+  const tulips=[[w*.06,h*.7],[w*.16,h*.66],[w*.26,h*.7],[w*.38,h*.64],[w*.5,h*.7],[w*.62,h*.66],[w*.72,h*.7],[w*.82,h*.64],[w*.92,h*.68]].map(([cx,base],i)=>{const colors=[['#f0a0b0','#f8c0cc'],['#e090e0','#f0b0f0'],['#f0c060','#f8d888'],['#f0a8a0','#f8c8c0']];const [f1,f2]=colors[i%4];return _tulip(cx,base,h*.22,f1,f2);}).join('');
+  const butterflies=[[w*.35,h*.3],[w*.65,h*.4],[w*.2,h*.45]].map(([cx,cy])=>`<ellipse cx="${cx-8}" cy="${cy}" rx="9" ry="6" fill="#f8d080" opacity=".45" transform="rotate(-20,${cx-8},${cy})"/><ellipse cx="${cx+8}" cy="${cy}" rx="9" ry="6" fill="#f8d080" opacity=".45" transform="rotate(20,${cx+8},${cy})"/><line x1="${cx}" y1="${cy-6}" x2="${cx}" y2="${cy+6}" stroke="#a08060" stroke-width="1.5" opacity=".4"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_sun(w*.85,h*.14,28,'#fff8c0')}${_rays(w*.85,h*.14,28,10,'#fff8c0')}${_cl(w,h,'#fff',.6)}${ground}${tulips}${butterflies}<text x="${w*.5}" y="${h*.91}" text-anchor="middle" font-size="12" fill="#2a6a40" opacity=".55" font-family="system-ui" font-weight="500">Mother's Day 🌷</text></svg>`;
+}
+
+// JUN — Graduation caps & diplomas, warm golden sky
+function M06(w,h){
+  const sky=`<defs><linearGradient id="jng" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fdf8e8"/><stop offset="100%" stop-color="#fffef5"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#jng)"/>`;
+  const caps=[[w*.1,h*.3,36],[w*.28,h*.22,42],[w*.48,h*.28,38],[w*.67,h*.2,44],[w*.86,h*.3,34]].map(([cx,cy,r])=>_capGown(cx,cy,r)).join('');
+  const confetti=Array.from({length:32},(_,i)=>{const cx=(i*97+23)%w;const cy=h*.05+(i*67)%(h*.82);const cols=['#f7d060','#f08080','#80c8f0','#a0d8a0','#d0a8f0','#f0b880'];const col=cols[i%6];const ang=(i*37)%180;return `<rect x="${cx-4}" y="${cy-2}" width="8" height="4" fill="${col}" opacity="${.3+i%3*.12}" transform="rotate(${ang},${cx},${cy})"/>`;}).join('');
+  const diploma=`<rect x="${w*.38}" y="${h*.62}" width="${w*.24}" height="${h*.16}" rx="5" fill="#f8e8b8" opacity=".55"/><rect x="${w*.41}" y="${h*.64}" width="${w*.18}" height="${h*.12}" rx="3" fill="#f0d890" opacity=".5"/><line x1="${w*.44}" y1="${h*.68}" x2="${w*.56}" y2="${h*.68}" stroke="#c0a050" stroke-width="1.5" opacity=".45"/><line x1="${w*.44}" y1="${h*.71}" x2="${w*.56}" y2="${h*.71}" stroke="#c0a050" stroke-width="1.5" opacity=".45"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_cl(w,h,'#fff',.5)}${confetti}${caps}${diploma}<text x="${w*.5}" y="${h*.91}" text-anchor="middle" font-size="12" fill="#6a5810" opacity=".55" font-family="system-ui" font-weight="500">Graduation Season 🎓</text></svg>`;
+}
+
+// JUL — 4th of July, patriotic fireworks
+function M07(w,h){
+  const sky=`<defs><linearGradient id="jlg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ddeaf8"/><stop offset="100%" stop-color="#eef5fb"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#jlg)"/>`;
+  const fw=[_firework(w*.15,h*.2,46,'#f0a8b0'),_firework(w*.38,h*.14,52,'#a8c8f0'),_firework(w*.6,h*.22,44,'#f8e4a0'),_firework(w*.8,h*.16,40,'#b0d8c0'),_firework(w*.25,h*.38,32,'#d8b0f0'),_firework(w*.7,h*.38,30,'#f0c8a0')].join('');
+  const flag=`<rect x="${w*.04}" y="${h*.55}" width="${w*.2}" height="${h*.3}" fill="#f0f0f0" opacity=".45"/>${Array.from({length:7},(_,i)=>`<rect x="${w*.04}" y="${h*.55+i*(h*.3/7)}" width="${w*.2}" height="${h*.3/14}" fill="${i%2===0?'#e87878':'#f0f0f0'}" opacity=".4"/>`).join('')}<rect x="${w*.04}" y="${h*.55}" width="${w*.08}" height="${h*.13}" fill="#8898c8" opacity=".45"/>`;
+  const sp=[[w*.48,h*.08],[w*.88,h*.32],[w*.05,h*.45],[w*.72,h*.48]].map(([x,y])=>_sparkle(x,y,9,'#f0d070')).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_stars(28,w,h,'#b0c8e8')}${fw}${sp}${flag}${_rh(w,h,h*.72,'#b8c8d8',.35)}<text x="${w*.5}" y="${h*.92}" text-anchor="middle" font-size="12" fill="#2a4888" opacity=".55" font-family="system-ui" font-weight="500">4th of July 🎆</text></svg>`;
+}
+
+// AUG — Kobe Bryant (kept from original, lightened)
+function M08(w,h){
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="aug" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8e0f0"/><stop offset="100%" stop-color="#f0eaf8"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#aug)"/>${_stars(20,w,h,'#b8a8d8')}${_jerseyL(32,18,150,h*.7)}${_dunker(w*.52,h*.04,h*.78)}<text x="${w*.5}" y="${h*.93}" text-anchor="middle" font-size="12" fill="#5a2090" opacity=".6" font-family="system-ui" font-weight="500">Mamba Forever — #24 🏀</text></svg>`;
+}
+
+// SEP — Back to School, backpacks and apple
+function M09(w,h){
+  const sky=`<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fdf4e4"/><stop offset="100%" stop-color="#fffbf2"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#sg)"/>`;
+  const school=`<rect x="${w*.3}" y="${h*.35}" width="${w*.4}" height="${h*.4}" fill="#e8d0b8" opacity=".45"/><polygon points="${w*.28},${h*.35} ${w*.72},${h*.35} ${w*.5},${h*.18}" fill="#d8b8a0" opacity=".4"/><rect x="${w*.44}" y="${h*.58}" width="${w*.12}" height="${h*.17}" fill="#b09080" opacity=".45"/><rect x="${w*.37}" y="${h*.42}" width="${w*.1}" height="${h*.1}" fill="#c8e8f0" opacity=".45"/><rect x="${w*.53}" y="${h*.42}" width="${w*.1}" height="${h*.1}" fill="#c8e8f0" opacity=".45"/>`;
+  const packs=[[w*.1,h*.55,26],[w*.82,h*.52,30],[w*.18,h*.72,22],[w*.75,h*.7,24]].map(([cx,cy,r])=>_backpack(cx,cy,r)).join('');
+  const apple=`<circle cx="${w*.9}" cy="${h*.25}" r="22" fill="#e87878" opacity=".5"/><circle cx="${w*.9}" cy="${h*.25}" r="14" fill="#f09090" opacity=".45"/><rect x="${w*.9-2}" y="${h*.25-26}" width="4" height="12" fill="#7a9a50" opacity=".55"/><ellipse cx="${w*.9+10}" cy="${h*.25-22}" rx="10" ry="6" fill="#90b860" opacity=".45" transform="rotate(-30,${w*.9+10},${h*.25-22})"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_sun(w*.12,h*.14,26,'#fff0b0')}${_rays(w*.12,h*.14,26)}${_cl(w,h,'#fff',.55)}${school}${packs}${apple}<text x="${w*.5}" y="${h*.92}" text-anchor="middle" font-size="12" fill="#8a5820" opacity=".55" font-family="system-ui" font-weight="500">Back to School 📚</text></svg>`;
+}
+
+// OCT — Halloween, pumpkins & bats
+function M10(w,h){
+  const sky=`<defs><linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f8ede0"/><stop offset="100%" stop-color="#fdf5ec"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#og)"/>`;
+  const moon=`<circle cx="${w*.82}" cy="${h*.18}" r="32" fill="#f8e898" opacity=".5"/><circle cx="${w*.82+10}" cy="${h*.18-8}" r="28" fill="#f8ede0" opacity=".7"/>`;
+  const bats=[[w*.25,h*.28],[w*.48,h*.18],[w*.65,h*.32],[w*.15,h*.45]].map(([cx,cy])=>`<path d="M${cx-18},${cy} Q${cx-9},${cy-10} ${cx},${cy+3} Q${cx+9},${cy-10} ${cx+18},${cy} Q${cx+9},${cy-3} ${cx},${cy+8} Q${cx-9},${cy-3} ${cx-18},${cy} Z" fill="#c8a878" opacity=".35"/>`).join('');
+  const pumpkins=[[w*.08,h*.68,24],[w*.25,h*.72,30],[w*.45,h*.66,26],[w*.65,h*.72,28],[w*.82,h*.67,22]].map(([cx,cy,r])=>_pumpkin(cx,cy,r)).join('');
+  const web=`<path d="M${w*.92},${h*.08} L${w*.78},${h*.28}" stroke="#c8b898" stroke-width="1" opacity=".3"/><path d="M${w*.88},${h*.02} L${w*.72},${h*.3}" stroke="#c8b898" stroke-width="1" opacity=".3"/><circle cx="${w*.85}" cy="${h*.18}" r="12" stroke="#c8b898" stroke-width="1" fill="none" opacity=".3"/><circle cx="${w*.85}" cy="${h*.18}" r="20" stroke="#c8b898" stroke-width="1" fill="none" opacity=".22"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${moon}${web}${bats}${_rh(w,h,h*.65,'#d8b888',.4)}${pumpkins}<text x="${w*.5}" y="${h*.92}" text-anchor="middle" font-size="12" fill="#8a4010" opacity=".55" font-family="system-ui" font-weight="500">Halloween 🎃</text></svg>`;
+}
+
+// NOV — Thanksgiving, turkey & autumn leaves
+function M11(w,h){
+  const sky=`<defs><linearGradient id="ng" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#faf0e0"/><stop offset="100%" stop-color="#fdf8f0"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#ng)"/>`;
+  const turkeys=[[w*.25,h*.58,38],[w*.65,h*.55,44],[w*.1,h*.62,28],[w*.88,h*.6,32]].map(([cx,cy,r])=>_turkey(cx,cy,r)).join('');
+  const leaves=Array.from({length:30},(_,i)=>{const lx=(i*113)%w;const ly=h*.05+(i*71)%(h*.85);const cols=['#e8a050','#d06828','#c84828','#e8c050','#d08838'];const col=cols[i%5];const ang=(i*47)%180;return `<ellipse cx="${lx}" cy="${ly}" rx="${6+i%4*2}" ry="${3+i%3}" fill="${col}" opacity="${.25+i%4*.06}" transform="rotate(${ang},${lx},${ly})"/>`;}).join('');
+  const table=`<rect x="${w*.2}" y="${h*.72}" width="${w*.6}" height="${h*.12}" rx="6" fill="#c8a878" opacity=".4"/><ellipse cx="${w*.35}" cy="${h*.7}" rx="18" ry="10" fill="#e8b870" opacity=".45"/><ellipse cx="${w*.5}" cy="${h*.7}" rx="22" ry="12" fill="#e0a050" opacity=".45"/><ellipse cx="${w*.65}" cy="${h*.7}" rx="16" ry="9" fill="#e8c060" opacity=".45"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_cl(w,h,'#fff',.45)}${leaves}${_rh(w,h,h*.68,'#c8a878',.4)}${turkeys}${table}<text x="${w*.5}" y="${h*.92}" text-anchor="middle" font-size="12" fill="#8a5020" opacity=".55" font-family="system-ui" font-weight="500">Thanksgiving 🦃</text></svg>`;
+}
+
+// DEC — Christmas tree, snow, gifts
+function M12(w,h){
+  const sky=`<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e4f4ec"/><stop offset="100%" stop-color="#f2fbf5"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#dg)"/>`;
+  const snow=Array.from({length:28},(_,i)=>{const sx=(i*137+29)%w;const sy=(i*89+15)%(h*.9);return `<circle cx="${sx}" cy="${sy}" r="${1+i%3}" fill="#d8eee0" opacity="${.3+i%3*.12}"/>`;}).join('');
+  const trees=[[w*.15,h*.72,28,h*.42],[w*.5,h*.68,36,h*.52],[w*.82,h*.73,24,h*.38]].map(([cx,base,r,th])=>_xmasTree(cx,base,r,th)).join('');
+  const gifts=[[w*.12,h*.8,22],[w*.35,h*.82,18],[w*.62,h*.8,24],[w*.85,h*.82,20]].map(([cx,cy,r])=>{const cols=[['#e87878','#f8d070'],['#78a8e8','#f8d070'],['#90d080','#f8d070'],['#d890d8','#f8d070']];const [bc,rc]=cols[Math.round(cx/200)%4];return `<rect x="${cx-r}" y="${cy-r*.8}" width="${r*2}" height="${r*1.6}" rx="${r*.15}" fill="${bc}" opacity=".5"/><rect x="${cx-r*.12}" y="${cy-r*.8}" width="${r*.24}" height="${r*1.6}" fill="${rc}" opacity=".45"/><rect x="${cx-r}" y="${cy-r*.2}" width="${r*2}" height="${r*.24}" fill="${rc}" opacity=".45"/>`;}).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${sky}${_cl(w,h,'#e8f8ee',.55)}${snow}${_rh(w,h,h*.7,'#c8e8d0',.45)}${trees}${gifts}<text x="${w*.5}" y="${h*.93}" text-anchor="middle" font-size="12" fill="#2a6a40" opacity=".55" font-family="system-ui" font-weight="500">Christmas 🎄</text></svg>`;
+}
+
+function ptColor(v){return v>=20?'#E24B4A':v>=10?'#EF9F27':'#1565C0';}
+let chart,animFrame,currentIdx=null,animDone=false,currentVar='max_rev_bal_amt_12_mth';
+
+function buildScene(lbl){
+  const sk=getSK(lbl);const st=seasonStyles[sk];
+  const wrap=document.getElementById('chart-wrap');
+  wrap.style.background=st.bg;
+  document.getElementById('scene-label').textContent=st.label;
+  document.getElementById('scene-label').style.color=st.labelColor;
+  document.getElementById('month-strip').style.background=st.stripBg;
+  const w=wrap.offsetWidth||700;const h=320;
+  const fns={jan:M01,feb:M02,mar:M03,apr:M04,may:M05,jun:M06,jul:M07,aug:M08,sep:M09,oct:M10,nov:M11,dec:M12};
+  document.getElementById('bg-scene').innerHTML=(fns[sk]||M01)(w,h);
+  return st;
+}
+
+function updateMetrics(lbl,csi){
+  document.getElementById('m-month').textContent=lbl;
+  const ce=document.getElementById('m-csi');
+  ce.textContent=csi.toFixed(1)+'%';
+  ce.className='mv '+(csi>=20?'danger':csi>=10?'warn':'ok');
+  const se=document.getElementById('m-sev');
+  if(csi>=20){se.textContent='HIGH';se.className='mv danger';}
+  else if(csi>=10){se.textContent='MODERATE';se.className='mv warn';}
+  else{se.textContent='STABLE';se.className='mv ok';}
+}
+
+function getDiag(varKey,lblKey){
+  const vd=varData[varKey];
+  if(!vd)return varData.max_rev_bal_amt_12_mth.diag.default;
+  return vd.diag[lblKey]||vd.diag.default;
+}
+
+function buildStrip(st){
+  const strip=document.getElementById('month-strip');strip.innerHTML='';
+  const csi=varData[currentVar].csi;
+  labels.forEach((lbl,i)=>{
+    const isActive=i===currentIdx;
+    const isAlert=csi[i]>=10;
+    const cell=document.createElement('div');cell.className='m-cell';
+    cell.style.color=isActive?'#fff':(isAlert?st.activeBg:st.stripColor);
+    cell.style.background=isActive?(isAlert?'#A32D2D':st.activeBg):'transparent';
+    cell.style.fontWeight=isActive?'500':'400';
+    cell.textContent=shortLabels[i];cell.title=lbl;
+    cell.onclick=()=>{if(animDone)selectMonth(i);};
+    strip.appendChild(cell);
+  });
+}
+
+function getData(n,csiArr){return csiArr.slice(0,n).concat(Array(csiArr.length-n).fill(null));}
+
+function buildChart(n,csiArr){
+  if(chart){chart.destroy();chart=null;}
+  const ctx=document.getElementById('csiChart').getContext('2d');
+  const d=getData(n,csiArr);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart=new Chart(ctx,{type:'line',data:{labels:shortLabels,datasets:[
+    {label:'CSI',data:d,borderColor:'#1565C0',backgroundColor:'rgba(21,101,192,0.08)',fill:true,tension:0.38,
+     pointRadius:d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5)),
+     pointBackgroundColor:d.map(v=>v===null?'transparent':ptColor(v)),
+     pointBorderColor:d.map((v,i)=>i===currentIdx?'#fff':'transparent'),
+     pointBorderWidth:d.map((v,i)=>i===currentIdx?2:0),borderWidth:2.5,spanGaps:false},
+    {label:'Moderate',data:Array(labels.length).fill(10),borderColor:'#EF9F27',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false},
+    {label:'High',data:Array(labels.length).fill(20),borderColor:'#E24B4A',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},
+    plugins:{legend:{display:false},tooltip:{filter:item=>item.datasetIndex===0&&item.raw!==null,callbacks:{label:c=>'CSI: '+c.parsed.y.toFixed(1)+'%'}}},
+    onClick(e,els){if(!animDone)return;if(els.length&&els[0].datasetIndex===0)selectMonth(els[0].index);},
+    scales:{x:{ticks:{color:'rgba(0,0,0,0)',maxRotation:0},grid:{display:false},border:{display:false}},
+    y:{min:0,max:yMax,ticks:{font:{size:10},color:'#666',callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}});
+}
+
+function updateChart(n,csiArr){
+  if(!chart)return;
+  const d=getData(n,csiArr);
+  chart.data.datasets[0].data=d;
+  chart.data.datasets[0].pointRadius=d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5));
+  chart.data.datasets[0].pointBorderColor=d.map((v,i)=>i===currentIdx?'#fff':'transparent');
+  chart.data.datasets[0].pointBorderWidth=d.map((v,i)=>i===currentIdx?2:0);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart.options.scales.y.max=yMax;
+  chart.update('none');
+}
+
+// ── Distribution shift & stats data per variable per high-CSI month ──────
+const diagTableData={
+  max_rev_bal_amt_12_mth:{
+    '202603':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 780,1240,1860,1580,1640],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3660},
+        {m:'Median', tr:3064, vl:3595},
+        {m:'Std Dev',tr:1521, vl:2408},
+        {m:'P99',    tr:7912, vl:9916},
+        {m:'Skew',   tr:0.99, vl:0.38},
+      ]
+    },
+    '202602':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 890,1450,1960,1720,1520],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3510},
+        {m:'Median', tr:3064, vl:3280},
+        {m:'Std Dev',tr:1521, vl:1980},
+        {m:'P99',    tr:7912, vl:9100},
+        {m:'Skew',   tr:0.99, vl:0.58},
+      ]
+    },
+    '202601':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 960,1580,2000,1820,1440],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3430},
+        {m:'Median', tr:3064, vl:3140},
+        {m:'Std Dev',tr:1521, vl:1680},
+        {m:'P99',    tr:7912, vl:8350},
+        {m:'Skew',   tr:0.99, vl:0.82},
+      ]
+    }
+  },
+  avg_bal_6_mth:{
+    '202603':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [ 980,1520,1480, 980, 680],
+      stats:[
+        {m:'Mean',   tr:2180, vl:1920},
+        {m:'Median', tr:1980, vl:1720},
+        {m:'Std Dev',tr:1240, vl:1380},
+        {m:'P99',    tr:5800, vl:6200},
+        {m:'Skew',   tr:1.12, vl:1.34},
+      ]
+    },
+    '202602':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [1060,1640,1540,1020, 700],
+      stats:[
+        {m:'Mean',   tr:2180, vl:2050},
+        {m:'Median', tr:1980, vl:1840},
+        {m:'Std Dev',tr:1240, vl:1310},
+        {m:'P99',    tr:5800, vl:6050},
+        {m:'Skew',   tr:1.12, vl:1.24},
+      ]
+    },
+    '202601':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [1150,1740,1600,1060, 720],
+      stats:[
+        {m:'Mean',   tr:2180, vl:2110},
+        {m:'Median', tr:1980, vl:1920},
+        {m:'Std Dev',tr:1240, vl:1280},
+        {m:'P99',    tr:5800, vl:5940},
+        {m:'Skew',   tr:1.12, vl:1.18},
+      ]
+    }
+  },
+  bt_spend_amt_6_mth:{
+    '202603':{
+      bins:['0–500','500–1k','1k–2k','2k–3k','3k+'],
+      train:[1580,1920,1640,1020, 640],
+      val:  [1280,1680,1780,1140, 820],
+      stats:[
+        {m:'Mean',   tr:1240, vl:1480},
+        {m:'Median', tr:1080, vl:1280},
+        {m:'Std Dev',tr: 820, vl:1060},
+        {m:'P99',    tr:3800, vl:4600},
+        {m:'Skew',   tr:1.08, vl:0.92},
+      ]
+    },
+    '202602':{
+      bins:['0–500','500–1k','1k–2k','2k–3k','3k+'],
+      train:[1580,1920,1640,1020, 640],
+      val:  [1420,1820,1700,1060, 700],
+      stats:[
+        {m:'Mean',   tr:1240, vl:1360},
+        {m:'Median', tr:1080, vl:1180},
+        {m:'Std Dev',tr: 820, vl: 940},
+        {m:'P99',    tr:3800, vl:4200},
+        {m:'Skew',   tr:1.08, vl:0.98},
+      ]
+    }
+  }
+};
+
+function fmtNum(v){
+  if(Math.abs(v)<10) return v.toFixed(2);
+  return Math.round(v).toLocaleString();
+}
+
+function buildDiagTables(varKey, monthKey){
+  const panel=document.getElementById('diag-tables');
+  const vmap=diagTableData[varKey];
+  if(!vmap||!vmap[monthKey]){panel.style.display='none';return;}
+  const td=vmap[monthKey];
+  panel.style.display='block';
+
+  // ── max bar value for scaling
+  const maxBar=Math.max(...td.train,...td.val);
+
+  // ── Distribution shift: horizontal grouped bars
+  const barsHTML=td.bins.map((bin,i)=>{
+    const tw=Math.round(td.train[i]/maxBar*100);
+    const vw=Math.round(td.val[i]/maxBar*100);
+    return `<div class="dshift-row">
+      <div class="dshift-bin">${bin}</div>
+      <div class="dshift-bars">
+        <div class="dshift-bar" style="width:${tw}%;background:#3a7bd5" title="Training: ${td.train[i].toLocaleString()}"></div>
+        <div class="dshift-bar" style="width:${vw}%;background:#d94f2a" title="Validation: ${td.val[i].toLocaleString()}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Stats table rows
+  const statsHTML=td.stats.map((r,i)=>{
+    const diff=r.vl-r.tr;
+    const sign=diff>0?'+':'';
+    const cls=diff>0?'delta-up':diff<0?'delta-down':'delta-neutral';
+    const bg=i%2===0?'':'rgba(0,0,0,.018)';
+    return `<tr style="background:${bg}">
+      <td class="col-metric">${r.m}</td>
+      <td class="col-train">${fmtNum(r.tr)}</td>
+      <td class="col-val">${fmtNum(r.vl)}</td>
+      <td class="col-delta ${cls}">${sign}${fmtNum(diff)}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML=`<div class="dtables">
+    <div class="dtable-section">
+      <div class="dtable-heading">
+        <span class="dtable-heading-dot" style="background:linear-gradient(135deg,#3a7bd5,#d94f2a)"></span>
+        Distribution Shift
+      </div>
+      <div class="dshift-grid">${barsHTML}</div>
+      <div class="dshift-legend">
+        <span class="dshift-leg"><span class="dshift-leg-sq" style="background:#3a7bd5"></span>Training</span>
+        <span class="dshift-leg"><span class="dshift-leg-sq" style="background:#d94f2a"></span>Validation</span>
+      </div>
+    </div>
+    <div class="dtable-section">
+      <div class="dtable-heading">
+        <span class="dtable-heading-dot" style="background:linear-gradient(135deg,#7c3aed,#2563eb)"></span>
+        Statistical Changes
+      </div>
+      <table class="stats-tbl">
+        <thead><tr>
+          <th class="col-metric">Metric</th>
+          <th class="col-train">Training</th>
+          <th class="col-val">Validation</th>
+          <th class="col-delta">Δ</th>
+        </tr></thead>
+        <tbody>${statsHTML}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // Animate bars in
+  setTimeout(()=>{
+    panel.querySelectorAll('.dshift-bar').forEach((b,i)=>{
+      const target=b.style.width;b.style.width='0';
+      setTimeout(()=>{b.style.width=target;},i*35+80);
+    });
+  },50);
+}
+
+function selectMonth(idx){
+  currentIdx=idx;
+  const key=labels[idx];const csi=varData[currentVar].csi[idx];
+  let d=getDiag(currentVar,key);
+  if(csi<10){
+    const vd=varData[currentVar];
+    const baseline=modelConfigs[currentModel].devBaseline;
+    d={badge:'No Drift Detected',cls:'',reasons:[
+      {ic:'✓',t:`CSI &lt; 10% — distribution stable. <strong>${vd.label}</strong> closely tracks the ${baseline} development baseline. No corrective action required.`}
+    ]};
+  }
+  document.getElementById('llm-badge').textContent=d.badge;
+  document.getElementById('llm-badge').className='llm-badge'+(d.cls?' '+d.cls:'');
+  document.getElementById('pulse').className='pulse'+(d.cls?' '+d.cls:'');
+  const rbox=document.getElementById('rbox');rbox.innerHTML='';
+  d.reasons.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='rl';
+    const ic=r.ic==='✕'?'#A32D2D':r.ic==='△'?'#854F0B':'#3B6D11';
+    el.innerHTML=`<span class="ri" style="color:${ic}">${r.ic}</span><span class="rt">${r.t}</span>`;
+    rbox.appendChild(el);setTimeout(()=>el.classList.add('show'),i*180);
+  });
+  if(csi<10){
+    document.getElementById('diag-tables').style.display='none';
+  } else {
+    buildDiagTables(currentVar, key);
+  }
+  updateMetrics(key,csi);
+  const st=buildScene(key);
+  updateChart(labels.length,varData[currentVar].csi);
+  buildStrip(st);
+}
+
+function animBar(fId,vId,target){
+  const fill=document.getElementById(fId),val=document.getElementById(vId);
+  fill.style.width=target+'%';let cur=0;const step=target/28;
+  const t=setInterval(()=>{cur=Math.min(cur+step,target);val.textContent=Math.round(cur)+'%';if(cur>=target)clearInterval(t);},28);
+}
+
+function animateLine(varKey){
+  cancelAnimationFrame(animFrame);animDone=false;currentIdx=null;
+  const csiArr=varData[varKey].csi;
+  let count=0;const total=labels.length;
+  buildChart(0,csiArr);
+  const st0=buildScene(labels[0]);buildStrip(st0);
+  updateMetrics(labels[0],csiArr[0]);
+  document.getElementById('rbox').innerHTML='<span class="placeholder-msg">Click any month label below the chart to generate drift diagnostics.</span>';
+  document.getElementById('diag-tables').style.display='none';
+  document.getElementById('llm-badge').textContent='Select a month';
+  document.getElementById('llm-badge').className='llm-badge';
+  document.getElementById('pulse').className='pulse';
+  document.getElementById('chart-title').innerHTML=`Monthly CSI — <strong>${varKey}</strong> — click any month to inspect`;
+  const step=()=>{
+    count=Math.min(count+1,total);
+    updateChart(count,csiArr);
+    const lbl=labels[count-1];
+    const st2=buildScene(lbl);buildStrip(st2);
+    updateMetrics(lbl,csiArr[count-1]);
+    if(count<total){animFrame=requestAnimationFrame(()=>setTimeout(step,320));}
+    else{animDone=true;currentIdx=total-1;selectMonth(total-1);}
+  };
+  setTimeout(step,400);
+}
+
+// ── Model → variable configs ──────────────────────────────────────────────
+const modelConfigs={
+  pcli:{
+    label:'PCLI Uplift Model',
+    devBaseline:'202312',
+    vars:['max_rev_bal_amt_12_mth','slope_rev_bal_amt_12_mth','mean_rev_bal_amt_12_mth','avg_tran_amt_24_mth','max_restaurant_tran_amt_6mth']
+  },
+  balance_attrition:{
+    label:'Balance Attrition Model',
+    devBaseline:'202306',
+    vars:['avg_bal_6_mth','max_bal_12_mth','slope_bal_6_mth','util_rate_12_mth','min_payment_ratio_12_mth']
+  },
+  bt_uplift:{
+    label:'BT Uplift Model',
+    devBaseline:'202309',
+    vars:['bt_spend_amt_6_mth','avg_bt_tran_cnt_12_mth','max_bt_amt_3_mth','slope_bt_spend_12_mth','bt_util_rate_6_mth']
+  }
+};
+
+// Extra varData for Balance Attrition and BT Uplift models
+const extraVarData={
+  // ── Balance Attrition ──────────────────────────────────────
+  avg_bal_6_mth:{
+    label:'avg_bal_6_mth',
+    csi:[2.1,2.4,2.2,2.6,2.3,2.8,3.1,5.2,9.4,14.8,18.5],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> 6-month average balance closely tracks the Jun 2023 development baseline. No corrective action required.'},
+        {ic:'✓',t:'No macro or seasonal anomaly detected. Consumer balance behavior is consistent with expectations.'}
+      ],dist:5,macro:3,seas:6},
+      '202601':{badge:'Watch — Approaching Threshold',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 9.4%, nearing the 10% threshold.</strong> Early upward drift detected in avg_bal_6_mth. Post-holiday paydown compressing short-term balances vs. Jun 2023 baseline.'},
+        {ic:'△',t:'Accelerated paydown behavior linked to post-rate-cut consumer deleveraging. Seasonal pattern plausible — continue monitoring into Q2.'}
+      ],dist:38,macro:32,seas:26},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 14.8%, above 10% threshold.</strong> Average 6-month balance materially lower than baseline. Structural deleveraging continues in early 2026.'},
+        {ic:'△',t:'Attrition model inputs may overestimate balance retention. Investigate score calibration and lift curve stability.'}
+      ],dist:55,macro:70,seas:30},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 18.5% — near critical threshold.</strong> Balance distribution shifted materially from Jun 2023 baseline. Avg_bal_6_mth systematically lower than development period.'},
+        {ic:'△',t:'Recommend recalibration with a more recent baseline window or segment-level score overlays.'}
+      ],dist:80,macro:85,seas:40}
+    }
+  },
+  max_bal_12_mth:{label:'max_bal_12_mth',csi:seed1,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum 12-month balance distribution tracks Jun 2023 baseline. No material shift in high-balance segment.'},{ic:'✓',t:'No macro or seasonal signal. Model input remains representative.'}],dist:3,macro:2,seas:4}}},
+  slope_bal_6_mth:{label:'slope_bal_6_mth',csi:seed2,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Slope of 6-month balance trend shows no directional shift. Rate of balance change consistent with baseline.'},{ic:'✓',t:'No anomaly detected across segments.'}],dist:3,macro:2,seas:3}}},
+  util_rate_12_mth:{label:'util_rate_12_mth',csi:seed3,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 12-month utilization rate distribution tracks baseline closely. No significant behavioral shift.'},{ic:'✓',t:'Credit utilization behavior consistent with Jun 2023 development window.'}],dist:4,macro:3,seas:5}}},
+  min_payment_ratio_12_mth:{label:'min_payment_ratio_12_mth',csi:seed4,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Minimum payment ratio shows no delinquency pattern shift. Payment behavior consistent with Jun 2023 baseline.'},{ic:'✓',t:'No risk signal detected.'}],dist:3,macro:2,seas:4}}},
+
+  // ── BT Uplift ──────────────────────────────────────────────
+  bt_spend_amt_6_mth:{
+    label:'bt_spend_amt_6_mth',
+    csi:[1.5,1.8,1.6,2.0,1.7,2.2,2.5,3.8,7.1,11.9,15.6],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> 6-month BT spend closely tracks the Sep 2023 baseline. Balance transfer volume consistent with campaign response patterns.'},
+        {ic:'✓',t:'No macro or seasonal anomaly detected. No corrective action required.'}
+      ],dist:4,macro:3,seas:6},
+      '202601':{badge:'Watch — Early Uptick',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 7.1%, trending upward.</strong> BT spend showing early divergence from Sep 2023 baseline. Rate environment changes beginning to alter transaction size distribution.'},
+        {ic:'✓',t:'Still within acceptable range. Flag for next review cycle.'}
+      ],dist:30,macro:40,seas:18},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 11.9%, above 10% threshold.</strong> BT spend meaningfully shifted. Lower promotional APR environment driving larger average BT amounts vs. Sep 2023.'},
+        {ic:'△',t:'Uplift scores may undervalue high-spend BT segment. Investigate lift curve stability.'}
+      ],dist:52,macro:62,seas:26},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 15.6% — approaching critical threshold.</strong> BT spend distribution materially shifted. Sustained rate cuts driving structural change in BT behavior; Sep 2023 baseline no longer representative.'},
+        {ic:'△',t:'Recommend champion/challenger test with recently redeveloped BT uplift model.'}
+      ],dist:76,macro:82,seas:36}
+    }
+  },
+  avg_bt_tran_cnt_12_mth:{label:'avg_bt_tran_cnt_12_mth',csi:seed2,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 12-month average BT transaction count tracks Sep 2023 baseline. BT frequency behavior consistent with development period.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:4}}},
+  max_bt_amt_3_mth:{label:'max_bt_amt_3_mth',csi:seed3,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum 3-month BT amount distribution is stable. No spike in large BT transactions.'},{ic:'✓',t:'No macro signal detected.'}],dist:3,macro:2,seas:4}}},
+  slope_bt_spend_12_mth:{label:'slope_bt_spend_12_mth',csi:seed1,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> BT spend slope shows no directional trend shift. Rate of change consistent with Sep 2023 development window.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:3}}},
+  bt_util_rate_6_mth:{label:'bt_util_rate_6_mth',csi:seed4,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> BT utilization rate stable over 6-month window. Consistent with Sep 2023 baseline.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:4}}}
+};
+
+// Merge extraVarData into varData
+Object.assign(varData, extraVarData);
+
+let currentModel='pcli';
+
+function switchModel(modelKey){
+  currentModel=modelKey;
+  const cfg=modelConfigs[modelKey];
+  // update dev baseline display
+  document.getElementById('m-dev').textContent=cfg.devBaseline;
+  // rebuild var dropdown
+  const sel=document.getElementById('varSelect');
+  sel.innerHTML='';
+  cfg.vars.forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v;opt.textContent=v;
+    sel.appendChild(opt);
+  });
+  currentVar=cfg.vars[0];
+  animateLine(currentVar);
+}
+
+document.getElementById('modelSelect').addEventListener('change',function(){
+  switchModel(this.value);
+});
+
+document.getElementById('varSelect').addEventListener('change',function(){
+  currentVar=this.value;
+  animateLine(currentVar);
+});
+
+animateLine(currentVar);
+</script>
