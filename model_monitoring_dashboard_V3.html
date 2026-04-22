@@ -1,0 +1,1590 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,system-ui,sans-serif)}
+.dash{padding:1.5rem}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.title{font-size:18px;font-weight:500;color:var(--color-text-primary,#222)}
+.var-select-wrap{position:relative;flex:1;min-width:220px;max-width:360px}
+.var-select{width:100%;padding:6px 32px 6px 12px;font-size:12px;font-weight:500;border:.5px solid var(--color-border-secondary,rgba(0,0,0,.25));border-radius:8px;background:var(--color-background-primary,#fff);color:var(--color-text-primary,#222);appearance:none;cursor:pointer;outline:none;transition:border-color .2s}
+.var-select:focus{border-color:#378ADD}
+.select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--color-text-secondary,#888);font-size:11px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:var(--color-background-secondary,#f5f5f3);border-radius:8px;padding:12px 14px}
+.ml{font-size:11px;color:var(--color-text-secondary,#888);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.mv{font-size:18px;font-weight:500;color:var(--color-text-primary,#222);transition:color .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv.danger{color:#A32D2D}.mv.warn{color:#854F0B}.mv.ok{color:#3B6D11}
+.chart-wrap{position:relative;border-radius:12px;overflow:hidden;border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));margin-bottom:1rem;transition:background .8s}
+.bg-scene{position:absolute;inset:0;pointer-events:none;z-index:0}
+.bg-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.scene-label{position:absolute;top:10px;right:14px;font-size:11px;font-weight:500;z-index:2;transition:color .6s;opacity:.75}
+.chart-inner{position:relative;z-index:1;padding:1.25rem 1.25rem 0}
+.ct{font-size:12px;color:var(--color-text-secondary,#666);margin-bottom:.75rem}
+.legend{display:flex;gap:16px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary,#666)}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.leg-dash{width:18px;height:0;border-top:2px dashed}
+.month-strip{position:relative;z-index:1;display:flex;overflow-x:hidden;border-top:.5px solid rgba(0,0,0,.08);transition:background .6s}
+.m-cell{flex:1;min-width:0;text-align:center;padding:5px 1px 6px;font-size:9px;cursor:pointer;transition:background .15s,color .15s;border-right:.5px solid rgba(0,0,0,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-cell:last-child{border-right:none}
+.llm-card{background:var(--color-background-primary,#fff);border:.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));border-radius:14px;padding:1.25rem 1.4rem;margin-bottom:.25rem}
+.llm-header{display:flex;align-items:center;gap:10px;margin-bottom:.9rem;padding-bottom:.75rem;border-bottom:.5px solid rgba(0,0,0,.07)}
+.llm-title{font-size:11.5px;font-weight:600;color:var(--color-text-secondary,#555);text-transform:uppercase;letter-spacing:.07em}
+.llm-badge{font-size:11px;padding:3px 11px;border-radius:20px;background:#EAF3DE;color:#27500A;font-weight:600;letter-spacing:.02em;transition:background .3s,color .3s;margin-left:auto}
+.llm-badge.warn{background:#FAEEDA;color:#633806}
+.llm-badge.danger{background:#FCEBEB;color:#791F1F}
+.pulse{width:7px;height:7px;border-radius:50%;background:#52a318;animation:blink 1.5s infinite;transition:background .3s;flex-shrink:0}
+.pulse.warn{background:#EF9F27}.pulse.danger{background:#E24B4A}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.75)}}
+.diag-body{display:flex;gap:1rem}
+.diag-reasons{flex:1;min-width:0}
+.diag-bars{width:148px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:8px 12px;background:var(--color-background-secondary,#f6f5f2);border-radius:8px}
+.rbox{font-size:13px;line-height:1.75;color:var(--color-text-primary,#222);min-height:72px}
+.rl{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px;opacity:0;transform:translateY(5px);transition:opacity .35s,transform .35s}
+.rl:last-child{margin-bottom:0}
+.rl.show{opacity:1;transform:translateY(0)}
+.ri{font-size:12px;margin-top:3px;flex-shrink:0;width:16px;text-align:center;font-weight:700}
+.rt{font-size:12.5px;line-height:1.65;color:var(--color-text-primary,#333)}
+.rt strong{font-weight:600;color:#111}
+.sbar{display:flex;flex-direction:column;gap:4px}
+.slabel{font-size:10px;font-weight:600;color:var(--color-text-secondary,#777);text-transform:uppercase;letter-spacing:.05em}
+.strack{height:4px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}
+.sfill{height:100%;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.sval{font-size:11px;font-weight:600;color:var(--color-text-primary,#333);text-align:right}
+.bar-row{display:flex;align-items:center;gap:6px}
+.placeholder-msg{color:var(--color-text-tertiary,#bbb);font-size:12.5px;font-style:italic;padding:8px 0}
+/* ── Diag tables panel ──────────────────────────────────────── */
+.dtables{display:flex;gap:1rem;margin-top:1.1rem;padding-top:1rem;border-top:.5px solid rgba(0,0,0,.07);flex-wrap:wrap}
+.dtable-section{flex:1;min-width:240px}
+.dtable-heading{font-size:10.5px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.65rem;display:flex;align-items:center;gap:7px}
+.dtable-heading-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* Distribution shift — horizontal grouped bars */
+.dshift-grid{display:flex;flex-direction:column;gap:5px}
+.dshift-row{display:flex;align-items:center;gap:8px}
+.dshift-bin{font-size:10.5px;color:#666;width:62px;flex-shrink:0;text-align:right;font-variant-numeric:tabular-nums}
+.dshift-bars{flex:1;display:flex;flex-direction:column;gap:2px}
+.dshift-bar{height:9px;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1);min-width:2px}
+.dshift-legend{display:flex;gap:14px;margin-top:.55rem;padding-left:70px}
+.dshift-leg{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#666}
+.dshift-leg-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+/* Stats table */
+.stats-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.stats-tbl thead tr{border-bottom:1.5px solid rgba(0,0,0,.1)}
+.stats-tbl th{padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888}
+.stats-tbl th.col-train{color:#3a7bd5;text-align:right}
+.stats-tbl th.col-val{color:#d94f2a;text-align:right}
+.stats-tbl th.col-delta{color:#777;text-align:right}
+.stats-tbl th.col-metric{text-align:left}
+.stats-tbl tbody tr{border-bottom:.5px solid rgba(0,0,0,.05)}
+.stats-tbl tbody tr:last-child{border-bottom:none}
+.stats-tbl tbody tr:nth-child(even){background:rgba(0,0,0,.018)}
+.stats-tbl td{padding:6px 10px;font-size:12px;font-variant-numeric:tabular-nums}
+.stats-tbl td.col-metric{font-weight:600;color:#444;text-align:left}
+.stats-tbl td.col-train{color:#3a7bd5;font-weight:500;text-align:right}
+.stats-tbl td.col-val{color:#d94f2a;font-weight:500;text-align:right}
+.stats-tbl td.col-delta{font-weight:700;font-size:11.5px;text-align:right}
+.delta-up{color:#c0392b}.delta-down{color:#27ae60}.delta-neutral{color:#888}
+</style>
+
+<div class="dash">
+<h2 class="sr-only">Model Monitoring Dashboard</h2>
+
+<div class="header">
+  <span class="title">Model Monitoring</span>
+  <div class="var-select-wrap">
+    <select class="var-select" id="modelSelect">
+      <option value="pcli">PCLI Uplift Model</option>
+      <option value="balance_attrition">Balance Attrition Model</option>
+      <option value="bt_uplift">BT Uplift Model</option>
+    </select>
+    <span class="select-arrow">▾</span>
+  </div>
+  <div style="font-size:11px;font-weight:500;color:var(--color-text-secondary,#888);padding:0 4px 0 2px;flex-shrink:0">Feature</div>
+  <div class="var-select-wrap">
+    <select class="var-select" id="varSelect">
+      <option value="max_rev_bal_amt_12_mth">max_rev_bal_amt_12_mth</option>
+      <option value="slope_rev_bal_amt_12_mth">slope_rev_bal_amt_12_mth</option>
+      <option value="mean_rev_bal_amt_12_mth">mean_rev_bal_amt_12_mth</option>
+      <option value="avg_tran_amt_24_mth">avg_tran_amt_24_mth</option>
+      <option value="max_restaurant_tran_amt_6mth">max_restaurant_tran_amt_6mth</option>
+    </select>
+    <span class="select-arrow">▾</span>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="mc"><div class="ml">Dev baseline</div><div class="mv" id="m-dev">202312</div></div>
+  <div class="mc"><div class="ml">CSI</div><div class="mv ok" id="m-csi">3.2%</div></div>
+  <div class="mc"><div class="ml">Severity</div><div class="mv ok" id="m-sev">STABLE</div></div>
+  <div class="mc"><div class="ml">Month</div><div class="mv" id="m-month" style="font-size:15px">202505</div></div>
+</div>
+
+<!-- ── Variable Overview Heatmap ───────────────────────────── -->
+<div class="vov-wrap" id="vov-wrap">
+  <div class="vov-header">
+    <span class="vov-title">Variable Overview</span>
+    <span class="vov-hint">Click any cell to inspect</span>
+  </div>
+  <div class="vov-table-wrap">
+    <table class="vov-table" id="vov-table"></table>
+  </div>
+</div>
+
+<div class="chart-wrap" id="chart-wrap">
+  <div class="bg-scene" id="bg-scene"></div>
+  <div class="scene-label" id="scene-label"></div>
+  <div class="chart-inner">
+    <div class="ct" id="chart-title">Monthly CSI — <strong>max_rev_bal_amt_12_mth</strong> — click any month to inspect</div>
+    <div class="legend">
+      <span class="leg"><span class="leg-sq" style="background:#1565C0"></span>CSI</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#EF9F27"></span>Moderate (10%)</span>
+      <span class="leg"><span class="leg-dash" style="border-color:#E24B4A"></span>High (20%)</span>
+    </div>
+    <div style="position:relative;width:100%;height:220px">
+      <canvas id="csiChart" role="img" aria-label="CSI line chart for selected feature variable">CSI chart for selected feature variable.</canvas>
+    </div>
+  </div>
+  <div class="month-strip" id="month-strip"></div>
+</div>
+
+<div class="llm-card">
+  <div class="llm-header">
+    <div class="pulse" id="pulse"></div>
+    <span class="llm-title">AI Diagnostic Reasoning</span>
+    <span class="llm-badge" id="llm-badge">Select a month</span>
+  </div>
+  <div class="rbox" id="rbox"><span class="placeholder-msg">Click any month below the chart to generate drift diagnostics.</span></div>
+  <div id="diag-tables" style="display:none"></div>
+</div>
+</div>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+
+
+
+
+/* ── Variable Overview Heatmap ─────────────────────────────── */
+.vov-wrap {
+  margin-bottom: 1rem;
+  background: var(--color-background-primary,#fff);
+  border: .5px solid var(--color-border-tertiary,rgba(0,0,0,.12));
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+}
+.vov-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.vov-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary,#555);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.vov-hint {
+  font-size: 10.5px;
+  color: #bbb;
+  margin-left: auto;
+}
+.vov-table-wrap { overflow-x: auto; }
+.vov-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 10.5px;
+  table-layout: fixed;
+}
+.vov-table th {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #999;
+  text-align: center;
+  padding: 2px 3px;
+  white-space: nowrap;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.vov-table th.vov-var-lbl {
+  text-align: right;
+  width: 160px;
+  min-width: 120px;
+  color: #666;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  padding-right: 8px;
+  font-size: 10px;
+}
+.vov-table td.vov-var-lbl {
+  text-align: right;
+  padding-right: 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  cursor: default;
+}
+.vov-cell {
+  width: 100%;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s, opacity .15s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.vov-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  z-index: 10;
+}
+.vov-cell.active {
+  outline: 2px solid #1a1a2e;
+  outline-offset: 1px;
+}
+/* severity colours */
+.vov-ok      { background: #e8f5e2; color: #3B6D11; }
+.vov-warn    { background: #FAEEDA; color: #854F0B; }
+.vov-danger  { background: #FCEBEB; color: #A32D2D; }
+.vov-cell.vov-ok:hover    { background: #d2efc8; }
+.vov-cell.vov-warn:hover  { background: #f5ddb8; }
+.vov-cell.vov-danger:hover{ background: #f8d4d4; }
+
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(26,26,46,0.12);
+  box-shadow: 0 2px 16px rgba(26,26,46,0.06), 0 1px 3px rgba(26,26,46,0.04);
+}
+
+.rc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  background: #fff;
+}
+
+/* ── COLUMN HEADERS ── */
+.rc-table thead tr:first-child th {
+  background: #1a1a2e;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 11px 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rc-table thead tr:first-child th:first-child {
+  border-radius: 9px 0 0 0;
+}
+.rc-table thead tr:first-child th:last-child {
+  border-radius: 0 9px 0 0;
+}
+
+/* ── ROW STYLES ── */
+.rc-table tbody tr {
+  border-bottom: 1px solid rgba(26,26,46,0.07);
+  transition: background 0.18s;
+}
+.rc-table tbody tr:last-child {
+  border-bottom: none;
+}
+.rc-table tbody tr:hover {
+  background: #f7f8ff;
+}
+
+/* ── CELLS ── */
+.rc-table td {
+  padding: 14px 16px;
+  vertical-align: top;
+  line-height: 1.6;
+  color: #2d2d3a;
+}
+
+/* Root Cause label cell */
+.rc-table td.col-id {
+  width: 120px;
+  white-space: nowrap;
+}
+.rc-badge-inner {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rc-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #888;
+  letter-spacing: 0.04em;
+}
+.rc-pct {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a2e;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8efff 100%);
+  border: 1px solid #c8d8f8;
+  border-radius: 6px;
+  padding: 3px 9px;
+  margin-top: 2px;
+}
+
+/* Pct color variants */
+.rc-pct.pct-critical { background: linear-gradient(135deg,#fff0f0,#ffe4e4); border-color:#f5c2c2; color:#8B1A1A; }
+.rc-pct.pct-major    { background: linear-gradient(135deg,#fff7ed,#feebd8); border-color:#f8d4a8; color:#7A3A00; }
+.rc-pct.pct-minor    { background: linear-gradient(135deg,#f0fff4,#ddf8e8); border-color:#b4e8c8; color:#1A5C34; }
+.rc-pct.pct-info     { background: linear-gradient(135deg,#f5f5ff,#eeeeff); border-color:#d0d0f0; color:#3a3a8a; }
+
+/* Description cell */
+.rc-table td.col-desc {
+  width: 180px;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 12.5px;
+}
+
+/* Why cell */
+.rc-table td.col-why {
+  min-width: 260px;
+}
+.why-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.why-list li {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.55;
+}
+.why-dot {
+  margin-top: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #1565C0;
+}
+
+/* Evidence cell */
+.rc-table td.col-evidence {
+  min-width: 200px;
+}
+.ev-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ev-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  gap: 8px;
+}
+.ev-label {
+  color: #666;
+  font-size: 11px;
+  flex: 1;
+}
+.ev-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ev-up   { color: #c0392b; }
+.ev-down { color: #27ae60; }
+.ev-warn { color: #854F0B; }
+
+/* Effect cell */
+.rc-table td.col-effect {
+  min-width: 200px;
+}
+.effect-text {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.6;
+}
+.effect-tag {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tag-danger { background:#FCEBEB; color:#791F1F; border:1px solid #f5c2c2; }
+.tag-warn   { background:#FAEEDA; color:#633806; border:1px solid #f8d4a8; }
+.tag-info   { background:#EBF3FF; color:#1a4a90; border:1px solid #C2D9F8; }
+
+/* Alternating row tints */
+.rc-table tbody tr:nth-child(odd) td { background-color: #fafbff; }
+.rc-table tbody tr:nth-child(even) td { background-color: #ffffff; }
+.rc-table tbody tr:hover td { background-color: #f0f4ff !important; }
+
+/* Left accent line per row — uses --accent CSS var set inline */
+.rc-table tbody tr td:first-child {
+  border-left: 3px solid var(--accent, #1565C0);
+}
+
+/* Footer note */
+.rc-footer {
+  margin-top: 0.75rem;
+  padding: 8px 14px;
+  background: #f7f8fc;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid rgba(26,26,46,0.08);
+  border-top: none;
+  font-size: 11px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rc-footer-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #E24B4A; flex-shrink:0;
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const labels=['202505','202506','202507','202508','202509','202510','202511','202512','202601','202602','202603'];
+const shortLabels=["May'25","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan'26","Feb","Mar"];
+
+function randStable(n,base,spread){
+  const arr=[];let v=base;
+  for(let i=0;i<n;i++){v=Math.max(0.4,Math.min(base+spread,v+(Math.random()-.5)*spread*.8));arr.push(+v.toFixed(2));}
+  return arr;
+}
+const seed1=[1.1,0.9,1.2,0.8,1.0,1.1,0.9,1.0,1.1,0.9,1.0];
+const seed2=[0.8,1.1,0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,1.1];
+const seed3=[1.2,0.9,1.0,1.1,0.8,1.2,0.9,1.1,1.0,0.8,1.2];
+const seed4=[0.9,1.2,1.0,0.8,1.1,0.9,1.2,1.0,0.9,1.1,0.8];
+
+const varData={
+  max_rev_bal_amt_12_mth:{
+    label:'max_rev_bal_amt_12_mth',
+    csi:[3.2,2.9,3.1,3.3,2.8,3.0,3.2,3.1,4.2,8.7,20.0],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> Max revolving balance closely tracks the Dec 2023 development baseline. No corrective action required.'},
+        {ic:'✓',t:'No macro or seasonal signal. Consumer revolving balance behavior is consistent with expectations.'}
+      ],dist:4,macro:3,seas:5},
+      '202601':{badge:'Watch — Early Uptick',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 4.2%, beginning to climb.</strong> Max revolving balance trending upward — still within bounds, but the direction warrants monitoring heading into Q2 2026.'},
+        {ic:'△',t:'<strong>Why — subprime expansion beginning:</strong> 27 months of 22–28% APRs have eroded paydown capacity for lower-FICO customers. Compounding interest is now outpacing minimum payments for the &lt;600 segment, causing balances to accumulate and utilization to rise — which mechanically pushes FICO scores further down. FICO &lt;600 share rising from 2.7% baseline, increasing the weight of high-revolving-balance accounts in the portfolio average.'},
+        {ic:'✓',t:'Q1 tax-refund paydown is partially offsetting the signal. No immediate action required — flag for next review cycle and monitor subprime share trajectory.'}
+      ],dist:18,macro:28,seas:22},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 8.7%, approaching 10% threshold.</strong> FICO migration accelerating: subprime (&lt;600) surged from 2.7% → ~10%; high-quality (720+) population dropped from 51.6% → ~47%.'},
+        {ic:'△',t:'<strong>Why FICO is deteriorating:</strong> Sustained high APRs → higher minimum payments + compounding → customers unable to reduce utilization → FICO scores mechanically decline as utilization ratio rises → previously prime customers migrate into near-prime/subprime bands. Subprime accounts carry structurally higher revolving balances, pulling up portfolio-level REVOL_BAL_MAX_12M even without any new account originations.'},
+        {ic:'△',t:'<strong>Why even high-FICO customers are accumulating:</strong> Excellent (780+) accounts show REVOL_BAL_MAX_12M +37% ($1,100 → $1,511). 27 months of high rates have gradually eroded paydown capacity — creditworthy borrowers are revolving more rather than paying in full. Seasonal asymmetry amplifies: March 12-month lookback captures the Dec 2025 holiday peak without the year-end paydown offset, inflating the metric vs. the December baseline.'}
+      ],dist:45,macro:62,seas:38},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 20.0% — critical threshold breached.</strong> REVOL_BAL_MAX_12M shifted +14.7% ($1,129 → $1,295) over the 27-month Dec 2023 → Mar 2026 gap. Four compounding structural root causes.'},
+        {ic:'✕',t:'<strong>Root Cause #1 — FICO credit quality deterioration (~45%).</strong> Subprime (&lt;600) surged 2.7% → 15.4% (+12.6pp); high-quality (720+) fell 51.6% → 42.5% (−9.1pp). <em>Why:</em> Fed held rates at 22–28% APR through 2023–2025 → minimum payments no longer cover accruing interest → balances compound → utilization ratio rises mechanically → FICO scores decline → formerly prime customers migrate into near-prime and subprime bands. Subprime accounts carry structurally higher revolving balances (limited paydown capacity), directly inflating portfolio-level REVOL_BAL_MAX_12M.'},
+        {ic:'✕',t:'<strong>Root Cause #2 — High-FICO balance accumulation (~30%).</strong> Super-prime (720–780) +30%, excellent (780+) +37% ($1,100 → $1,511, +$411). <em>Why:</em> Even creditworthy borrowers faced 27 months of 22–28% APR compounding — paydown capacity eroded gradually. Behavior shifted from pay-in-full to revolving. This is structural: it builds slowly and does not self-correct when rates are cut, because customers must first recover liquidity before resuming paydown patterns.'},
+        {ic:'△',t:'<strong>Root Cause #3 — Seasonal timing wedge (~15%).</strong> <em>Why the Dec vs Mar gap inflates CSI:</em> The Dec 2023 DEV baseline captured customers mid-holiday-spend but immediately before January payoffs (year-end bonus paydowns, holiday debt resolution). The Mar 2026 OOT 12-month lookback captures the Dec 2025 holiday peak in its window but without that paydown offset — because 2026 tax refunds are smaller or redirected to debt service in the still-elevated rate environment. Net effect: March mechanically overstates the max revolving balance vs. the December snapshot.'},
+        {ic:'△',t:'<strong>Root Cause #4 — Transaction behavior / spending concentration (~10%).</strong> Mastercard Black Card mean transaction +62.3%, volume share +3.6pp. JetBlue Card −21.5%, Barclays View Mastercard −21.5%. Eating Places & Restaurants +34.9%. <em>Why Black Card is gaining share:</em> Under sustained high rates, consumers consolidate discretionary spend onto one premium rewards card to maximize cashback and points per dollar — a deliberate "wallet rationalization" behavior. The Black Card attracts this consolidation due to its rewards structure. <em>Why this inflates REVOL_BAL_MAX_12M:</em> Black Card carries higher per-transaction amounts ($600–$900+ typical vs. mid-tier $200–$400). More spend on a single high-ticket card → larger monthly statement balances → harder to pay in full each cycle → balance rolls over and revolves → feeds directly into REVOL_BAL_MAX_12M. Meanwhile mid-tier cards losing volume means fewer small transactions that were easier to pay off, further skewing the distribution rightward.'},
+        {ic:'△',t:'<strong>Recommendation:</strong> Immediate segment-level overlays for subprime band. Model was calibrated on 51.6% high-quality (720+) portfolio — now 42.5%. Rank-ordering is degraded for the subprime segment and likely miscalibrated for high-FICO revolvers. Strategic rebuild with a post-2024 development window planned within the quarter.'}
+      ],dist:88,macro:92,seas:45}
+    }
+  },
+  slope_rev_bal_amt_12_mth:{
+    label:'slope_rev_bal_amt_12_mth',
+    csi:seed1,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Slope of 12-month revolving balance trend shows no directional shift from the Dec 2023 baseline.'},
+        {ic:'✓',t:'Rate of balance change is consistent across all FICO segments. No macro or seasonal anomaly detected.'}
+      ],dist:3,macro:2,seas:4}
+    }
+  },
+  mean_rev_bal_amt_12_mth:{
+    label:'mean_rev_bal_amt_12_mth',
+    csi:seed2,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Average 12-month revolving balance distribution remains well within tolerance of the Dec 2023 baseline.'},
+        {ic:'✓',t:'Central tendency of revolving balances has not shifted materially. Model inputs remain representative.'}
+      ],dist:3,macro:3,seas:4}
+    }
+  },
+  avg_tran_amt_24_mth:{
+    label:'avg_tran_amt_24_mth',
+    csi:seed3,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 24-month average transaction amount distribution closely tracks baseline. Spending behavior is consistent.'},
+        {ic:'✓',t:'No inflationary distortion detected. The 24-month lookback provides natural smoothing against short-term seasonal effects.'}
+      ],dist:4,macro:3,seas:5}
+    }
+  },
+  max_restaurant_tran_amt_6mth:{
+    label:'max_restaurant_tran_amt_6mth',
+    csi:seed4,
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum restaurant transaction amount over 6 months shows no material shift from baseline.'},
+        {ic:'✓',t:'Dining spend ceiling is stable. No anomalous high-ticket dining inflation detected. Seasonal pattern is within expected bounds.'}
+      ],dist:3,macro:2,seas:6}
+    }
+  }
+};
+
+// ── Unified four-seasons landscape — same scene, nature changes with month ──
+
+// Month number → season config
+const monthScenes = {
+  '01': { sky:['#dce8f5','#eef4fb'], ground:'#dce8f0', hill1:'#c8d8e8', hill2:'#b8ccd8', hill3:'#a8bccb',
+          treeTop:'snow', label:'❄️ January', labelColor:'#3a5f80',
+          stripBg:'rgba(200,220,240,.7)', stripColor:'#3a6ea8', activeBg:'#3a6ea8' },
+  '02': { sky:['#e2ecf7','#f0f6fd'], ground:'#d8e6f0', hill1:'#c4d4e6', hill2:'#b4c8dc', hill3:'#a4bcd0',
+          treeTop:'snow-light', label:'❄️ February', labelColor:'#3a5f80',
+          stripBg:'rgba(200,220,240,.7)', stripColor:'#4a72a8', activeBg:'#4a72a8' },
+  '03': { sky:['#e8f2e6','#f4fbf4'], ground:'#c8e0c0', hill1:'#b0d0a8', hill2:'#9cc098', hill3:'#88b088',
+          treeTop:'blossom-early', label:'🌸 March', labelColor:'#6a3080',
+          stripBg:'rgba(220,200,235,.7)', stripColor:'#7a48a0', activeBg:'#7a48a0' },
+  '04': { sky:['#eef0fa','#f8f8fe'], ground:'#c0dab8', hill1:'#a8cc9c', hill2:'#94be88', hill3:'#80ae74',
+          treeTop:'blossom-full', label:'🌸 April', labelColor:'#904870',
+          stripBg:'rgba(240,215,235,.7)', stripColor:'#8a5098', activeBg:'#8a5098' },
+  '05': { sky:['#e4f5e8','#f2fdf4'], ground:'#a8d4a0', hill1:'#90c488', hill2:'#78b470', hill3:'#64a45c',
+          treeTop:'green-fresh', label:'🌿 May', labelColor:'#2a6a38',
+          stripBg:'rgba(185,235,195,.7)', stripColor:'#2e7d5a', activeBg:'#2e7d5a' },
+  '06': { sky:['#dff0e6','#eefbf2'], ground:'#98cc90', hill1:'#80bc78', hill2:'#68aa60', hill3:'#54984e',
+          treeTop:'green-lush', label:'☀️ June', labelColor:'#1a5830',
+          stripBg:'rgba(175,232,185,.7)', stripColor:'#1e7040', activeBg:'#1e7040' },
+  '07': { sky:['#d8ecf8','#ecf6fd'], ground:'#90c888', hill1:'#78b870', hill2:'#60a858', hill3:'#4c9846',
+          treeTop:'green-lush', label:'☀️ July', labelColor:'#1a5028',
+          stripBg:'rgba(175,230,185,.7)', stripColor:'#1a6838', activeBg:'#1a6838' },
+  '08': { sky:['#deedf8','#eef6fd'], ground:'#98cc90', hill1:'#80bc78', hill2:'#6aaa60', hill3:'#569850',
+          treeTop:'green-lush', label:'☀️ August', labelColor:'#1e5430',
+          stripBg:'rgba(180,232,188,.7)', stripColor:'#1e7040', activeBg:'#1e7040' },
+  '09': { sky:['#f0ebe2','#faf6ee'], ground:'#c8b880', hill1:'#b8a870', hill2:'#a89860', hill3:'#988850',
+          treeTop:'autumn-early', label:'🍂 September', labelColor:'#7a4010',
+          stripBg:'rgba(245,220,170,.7)', stripColor:'#a05820', activeBg:'#a05820' },
+  '10': { sky:['#f4e8d8','#fdf4ea'], ground:'#b89868', hill1:'#a88858', hill2:'#987848', hill3:'#886838',
+          treeTop:'autumn-peak', label:'🍁 October', labelColor:'#8a3808',
+          stripBg:'rgba(250,210,155,.7)', stripColor:'#b04818', activeBg:'#b04818' },
+  '11': { sky:['#e8e0d8','#f5f0ea'], ground:'#a89070', hill1:'#908060', hill2:'#806e50', hill3:'#6e5c40',
+          treeTop:'bare', label:'🍂 November', labelColor:'#5a3010',
+          stripBg:'rgba(238,218,180,.7)', stripColor:'#7a4818', activeBg:'#7a4818' },
+  '12': { sky:['#dce8f5','#eef4fb'], ground:'#e0ecf4', hill1:'#ccdce8', hill2:'#bccce0', hill3:'#acbcd8',
+          treeTop:'snow', label:'❄️ December', labelColor:'#2a4870',
+          stripBg:'rgba(205,222,242,.7)', stripColor:'#2a5888', activeBg:'#2a5888' },
+};
+
+function getMonthKey(lbl){ return lbl.slice(4,6); }
+function getScene(lbl){ return monthScenes[getMonthKey(lbl)] || monthScenes['01']; }
+
+// ── Beautiful tree renderer ────────────────────────────────────────────────
+// Draws a realistic deciduous tree with tapered trunk, forking branches,
+// and a layered organic canopy. All elements watermark-light (max opacity ~0.28).
+
+function _tree(cx, groundY, sc, style, w, h){
+  const O = 0.16; // global opacity multiplier — watermark level
+
+  // ── Trunk: tapered with slight lean, warm brown ──
+  const tH = sc * 1.25, tW = sc * 0.13;
+  const lean = sc * 0.04; // subtle lean right
+  const trunkPath = `M${cx - tW/2},${groundY} C${cx - tW/2},${groundY - tH*.4} ${cx + lean - tW/3},${groundY - tH*.7} ${cx + lean},${groundY - tH}
+    C${cx + lean + tW/3},${groundY - tH*.7} ${cx + tW/2},${groundY - tH*.4} ${cx + tW/2},${groundY} Z`;
+  const trunk = `<path d="${trunkPath}" fill="#9a8070" opacity="${O * 1.1}"/>`;
+
+  // Root flares at base
+  const roots = `
+    <path d="M${cx - tW/2},${groundY} Q${cx - tW*1.4},${groundY + tW*.3} ${cx - tW*2},${groundY}" stroke="#9a8070" stroke-width="${tW*.35}" fill="none" opacity="${O*.6}" stroke-linecap="round"/>
+    <path d="M${cx + tW/2},${groundY} Q${cx + tW*1.4},${groundY + tW*.3} ${cx + tW*2},${groundY}" stroke="#9a8070" stroke-width="${tW*.35}" fill="none" opacity="${O*.6}" stroke-linecap="round"/>`;
+
+  const brBase = groundY - tH; // top of trunk
+  const cr = sc * 1.1; // canopy radius reference
+
+  // ── Branch skeleton (always drawn, visible through canopy) ──
+  function branch(x1,y1,x2,y2,w,op){
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#9a8070" stroke-width="${w}" opacity="${op}" stroke-linecap="round"/>`;
+  }
+  // Main fork
+  const bL1x = cx - cr*.48, bL1y = brBase - sc*.38;
+  const bR1x = cx + cr*.42, bR1y = brBase - sc*.32;
+  const bT1x = cx + lean*.5, bT1y = brBase - sc*.52;
+  const branches =
+    branch(cx+lean, brBase, bL1x, bL1y, sc*.072, O*.9) +
+    branch(cx+lean, brBase, bR1x, bR1y, sc*.068, O*.9) +
+    branch(cx+lean, brBase, bT1x, bT1y, sc*.058, O*.85) +
+    // secondary forks
+    branch(bL1x, bL1y, bL1x - cr*.32, bL1y - sc*.38, sc*.044, O*.75) +
+    branch(bL1x, bL1y, bL1x + cr*.2,  bL1y - sc*.3,  sc*.038, O*.7) +
+    branch(bR1x, bR1y, bR1x + cr*.28, bR1y - sc*.36, sc*.04,  O*.75) +
+    branch(bR1x, bR1y, bR1x - cr*.14, bR1y - sc*.32, sc*.034, O*.68) +
+    branch(bT1x, bT1y, bT1x - cr*.18, bT1y - sc*.3,  sc*.034, O*.7) +
+    branch(bT1x, bT1y, bT1x + cr*.22, bT1y - sc*.26, sc*.032, O*.65) +
+    // fine twigs
+    branch(bL1x - cr*.32, bL1y - sc*.38, bL1x - cr*.48, bL1y - sc*.56, sc*.022, O*.5) +
+    branch(bL1x - cr*.32, bL1y - sc*.38, bL1x - cr*.18, bL1y - sc*.58, sc*.018, O*.45) +
+    branch(bR1x + cr*.28, bR1y - sc*.36, bR1x + cr*.44, bR1y - sc*.54, sc*.022, O*.5) +
+    branch(bR1x + cr*.28, bR1y - sc*.36, bR1x + cr*.12, bR1y - sc*.55, sc*.018, O*.45);
+
+  // Canopy center
+  const cY = brBase - sc * 0.68;
+
+  let canopy = '';
+
+  if(style === 'bare') {
+    canopy = ''; // just branches
+  }
+  else if(style === 'snow' || style === 'snow-light') {
+    const snowA = style === 'snow' ? O*1.3 : O*0.85;
+    // Snow sitting on bare branches — organic cloud shapes
+    canopy = `
+      <ellipse cx="${cx+lean*.6}" cy="${cY}" rx="${cr*.78}" ry="${cr*.5}" fill="#edf4fa" opacity="${snowA}"/>
+      <ellipse cx="${cx-cr*.3+lean*.3}" cy="${cY+cr*.18}" rx="${cr*.5}" ry="${cr*.3}" fill="#e4eef8" opacity="${snowA*.85}"/>
+      <ellipse cx="${cx+cr*.32+lean*.4}" cy="${cY+cr*.15}" rx="${cr*.46}" ry="${cr*.28}" fill="#e8f2fa" opacity="${snowA*.85}"/>
+      <ellipse cx="${cx+lean*.5}" cy="${cY-cr*.28}" rx="${cr*.44}" ry="${cr*.26}" fill="#f0f7fc" opacity="${snowA*.75}"/>
+      <ellipse cx="${cx-cr*.5+lean*.2}" cy="${cY-cr*.08}" rx="${cr*.32}" ry="${cr*.2}" fill="#eef5fb" opacity="${snowA*.7}"/>`;
+  }
+  else if(style === 'blossom-early') {
+    // Branches visible, small clusters of pink blooms at branch tips
+    const nodes = [
+      [cx-cr*.48+lean*.3, cY+cr*.05], [cx+cr*.42+lean*.5, cY+cr*.08],
+      [cx+lean*.5, cY-cr*.42], [cx-cr*.28+lean*.2, cY-cr*.22],
+      [cx+cr*.26+lean*.4, cY-cr*.18],
+    ];
+    canopy = nodes.map(([bx,by]) => `
+      <ellipse cx="${bx}" cy="${by}" rx="${cr*.3}" ry="${cr*.22}" fill="#f2c4d4" opacity="${O*1.1}"/>
+      <ellipse cx="${bx-cr*.1}" cy="${by-cr*.1}" rx="${cr*.18}" ry="${cr*.14}" fill="#f8d4e0" opacity="${O*.9}"/>
+      <circle cx="${bx}" cy="${by}" r="${cr*.08}" fill="#fce4ec" opacity="${O*.8}"/>
+    `).join('');
+  }
+  else if(style === 'blossom-full') {
+    // Full fluffy pink blossom cloud, organic & layered
+    canopy = `
+      <ellipse cx="${cx+lean*.6}" cy="${cY}" rx="${cr*.9}" ry="${cr*.68}" fill="#f4c4d4" opacity="${O*1.15}"/>
+      <ellipse cx="${cx-cr*.36+lean*.3}" cy="${cY+cr*.12}" rx="${cr*.58}" ry="${cr*.38}" fill="#f0b8cc" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+cr*.38+lean*.5}" cy="${cY+cr*.08}" rx="${cr*.54}" ry="${cr*.36}" fill="#f8ccd8" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+lean*.5}" cy="${cY-cr*.3}" rx="${cr*.56}" ry="${cr*.36}" fill="#fcd4e2" opacity="${O}"/>
+      <ellipse cx="${cx-cr*.18+lean*.3}" cy="${cY-cr*.48}" rx="${cr*.36}" ry="${cr*.24}" fill="#fce0ea" opacity="${O*.9}"/>
+      <ellipse cx="${cx+cr*.2+lean*.4}" cy="${cY-cr*.42}" rx="${cr*.32}" ry="${cr*.22}" fill="#f8d0de" opacity="${O*.85}"/>
+      <circle cx="${cx+lean*.5}" cy="${cY}" r="${cr*.2}" fill="#fff0f5" opacity="${O*.6}"/>`;
+  }
+  else if(style === 'green-fresh') {
+    // Light, airy spring green — slightly translucent
+    canopy = `
+      <ellipse cx="${cx+lean*.5}" cy="${cY}" rx="${cr*.85}" ry="${cr*.65}" fill="#a8d8a0" opacity="${O*1.1}"/>
+      <ellipse cx="${cx-cr*.34+lean*.3}" cy="${cY+cr*.16}" rx="${cr*.54}" ry="${cr*.36}" fill="#98cc90" opacity="${O}"/>
+      <ellipse cx="${cx+cr*.36+lean*.4}" cy="${cY+cr*.12}" rx="${cr*.5}" ry="${cr*.34}" fill="#b0dca8" opacity="${O}"/>
+      <ellipse cx="${cx+lean*.5}" cy="${cY-cr*.3}" rx="${cr*.5}" ry="${cr*.32}" fill="#c0e4b8" opacity="${O*.9}"/>
+      <circle cx="${cx+lean*.5}" cy="${cY}" r="${cr*.18}" fill="#d0eecc" opacity="${O*.55}"/>`;
+  }
+  else if(style === 'green-lush') {
+    // Deep, full summer canopy — rich layered volumes
+    canopy = `
+      <ellipse cx="${cx+lean*.5}" cy="${cY+cr*.06}" rx="${cr*.95}" ry="${cr*.72}" fill="#80c078" opacity="${O*1.1}"/>
+      <ellipse cx="${cx-cr*.38+lean*.2}" cy="${cY+cr*.2}" rx="${cr*.6}" ry="${cr*.4}" fill="#70b068" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+cr*.4+lean*.5}" cy="${cY+cr*.16}" rx="${cr*.58}" ry="${cr*.38}" fill="#88c880" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+lean*.5}" cy="${cY-cr*.28}" rx="${cr*.58}" ry="${cr*.38}" fill="#90cc88" opacity="${O}"/>
+      <ellipse cx="${cx-cr*.18+lean*.3}" cy="${cY-cr*.46}" rx="${cr*.38}" ry="${cr*.26}" fill="#98d090" opacity="${O*.9}"/>
+      <ellipse cx="${cx+cr*.22+lean*.4}" cy="${cY-cr*.4}" rx="${cr*.36}" ry="${cr*.24}" fill="#8cc884" opacity="${O*.85}"/>
+      <circle cx="${cx+lean*.4}" cy="${cY-cr*.1}" r="${cr*.22}" fill="#a8d8a0" opacity="${O*.45}"/>`;
+  }
+  else if(style === 'autumn-early') {
+    // Mixed green-gold early autumn
+    canopy = `
+      <ellipse cx="${cx+lean*.5}" cy="${cY}" rx="${cr*.88}" ry="${cr*.66}" fill="#c8b048" opacity="${O*1.1}"/>
+      <ellipse cx="${cx-cr*.34+lean*.2}" cy="${cY+cr*.14}" rx="${cr*.54}" ry="${cr*.36}" fill="#d09838" opacity="${O*1.0}"/>
+      <ellipse cx="${cx+cr*.36+lean*.4}" cy="${cY+cr*.1}" rx="${cr*.52}" ry="${cr*.34}" fill="#c8c050" opacity="${O*1.0}"/>
+      <ellipse cx="${cx+lean*.4}" cy="${cY-cr*.3}" rx="${cr*.48}" ry="${cr*.3}" fill="#d8b840" opacity="${O*.9}"/>
+      <ellipse cx="${cx-cr*.2+lean*.2}" cy="${cY-cr*.44}" rx="${cr*.34}" ry="${cr*.22}" fill="#b8c858" opacity="${O*.85}"/>
+      <circle cx="${cx+lean*.4}" cy="${cY}" r="${cr*.18}" fill="#e8d080" opacity="${O*.45}"/>`;
+  }
+  else if(style === 'autumn-peak') {
+    // Full fiery autumn — orange, red, amber
+    canopy = `
+      <ellipse cx="${cx+lean*.5}" cy="${cY+cr*.04}" rx="${cr*.92}" ry="${cr*.68}" fill="#d07830" opacity="${O*1.15}"/>
+      <ellipse cx="${cx-cr*.36+lean*.2}" cy="${cY+cr*.18}" rx="${cr*.58}" ry="${cr*.38}" fill="#c05020" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+cr*.38+lean*.5}" cy="${cY+cr*.14}" rx="${cr*.56}" ry="${cr*.36}" fill="#d89828" opacity="${O*1.05}"/>
+      <ellipse cx="${cx+lean*.5}" cy="${cY-cr*.3}" rx="${cr*.52}" ry="${cr*.34}" fill="#e08820" opacity="${O}"/>
+      <ellipse cx="${cx-cr*.2+lean*.3}" cy="${cY-cr*.46}" rx="${cr*.36}" ry="${cr*.24}" fill="#c84818" opacity="${O*.9}"/>
+      <ellipse cx="${cx+cr*.24+lean*.4}" cy="${cY-cr*.42}" rx="${cr*.34}" ry="${cr*.22}" fill="#d8a030" opacity="${O*.9}"/>
+      <circle cx="${cx+lean*.4}" cy="${cY-cr*.08}" r="${cr*.2}" fill="#f0c040" opacity="${O*.4}"/>`;
+  }
+
+  return roots + trunk + branches + canopy;
+}
+
+function drawScene(w, h, scene){
+  const s = scene;
+  // All colours are already very light in monthScenes — sky is the true bg
+  const ns = `<defs>
+    <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${s.sky[0]}"/>
+      <stop offset="100%" stop-color="${s.sky[1]}"/>
+    </linearGradient>
+  </defs>`;
+  const sky = `<rect width="${w}" height="${h}" fill="url(#skyg)"/>`;
+
+  // Pale sun — very subtle
+  const sunX = w*.84, sunY = h*.16, sunR = h*.075;
+  const sunEl = `<circle cx="${sunX}" cy="${sunY}" r="${sunR}" fill="#fffde8" opacity=".18"/>
+    <circle cx="${sunX}" cy="${sunY}" r="${sunR*.68}" fill="#fffae0" opacity=".14"/>`;
+
+  // Three rolling hills — watermark opacity
+  const gY1 = h*.58, gY2 = h*.67, gY3 = h*.78;
+  const hill1 = `<path d="M0,${gY1} Q${w*.18},${gY1-h*.07} ${w*.42},${gY1+h*.01} Q${w*.68},${gY1+h*.06} ${w},${gY1-h*.03} L${w},${h} L0,${h} Z" fill="${s.hill1}" opacity=".15"/>`;
+  const hill2 = `<path d="M0,${gY2} Q${w*.22},${gY2-h*.06} ${w*.5},${gY2+h*.01} Q${w*.76},${gY2+h*.05} ${w},${gY2-h*.02} L${w},${h} L0,${h} Z" fill="${s.hill2}" opacity=".14"/>`;
+  const hill3 = `<path d="M0,${gY3} Q${w*.28},${gY3-h*.04} ${w*.54},${gY3+h*.01} Q${w*.8},${gY3+h*.03} ${w},${gY3-h*.01} L${w},${h} L0,${h} Z" fill="${s.hill3}" opacity=".12"/>`;
+
+  // Trees — 5 beautiful trees on the middle hill, slightly staggered in depth
+  const treeDefs = [
+    {cx: w*.08,  sc: h*.155, gY: gY2 + h*.01},
+    {cx: w*.25,  sc: h*.195, gY: gY2 - h*.01},
+    {cx: w*.47,  sc: h*.215, gY: gY2 - h*.015},
+    {cx: w*.69,  sc: h*.185, gY: gY2},
+    {cx: w*.89,  sc: h*.150, gY: gY2 + h*.01},
+  ];
+  const trees = treeDefs.map(t => _tree(t.cx, t.gY, t.sc, s.treeTop, w, h)).join('');
+
+
+
+  // Atmospheric particles — very faint
+  let particles = '';
+  if(s.treeTop === 'snow'){
+    particles = Array.from({length:20},(_,i)=>{
+      const sx=(i*151+37)%w, sy=h*.03+(i*97)%(gY3-h*.06);
+      return `<circle cx="${sx}" cy="${sy}" r="${.8+i%3*.5}" fill="#ddeef8" opacity="${.12+i%4*.04}"/>`;
+    }).join('');
+  } else if(s.treeTop === 'snow-light'){
+    particles = Array.from({length:10},(_,i)=>{
+      const sx=(i*131+43)%w, sy=h*.04+(i*89)%(gY2-h*.06);
+      return `<circle cx="${sx}" cy="${sy}" r="${.7+i%3*.4}" fill="#ddeef8" opacity="${.08+i%3*.03}"/>`;
+    }).join('');
+  } else if(s.treeTop === 'autumn-peak'){
+    particles = Array.from({length:16},(_,i)=>{
+      const lx=(i*127+22)%w, ly=h*.06+(i*83)%(gY2-h*.08);
+      const cols=['#d08030','#c05020','#d8a028','#b84818'];
+      return `<ellipse cx="${lx}" cy="${ly}" rx="3.5" ry="2.2" fill="${cols[i%4]}" opacity="${.09+i%3*.03}" transform="rotate(${i*43},${lx},${ly})"/>`;
+    }).join('');
+  } else if(s.treeTop === 'blossom-full' || s.treeTop === 'blossom-early'){
+    particles = Array.from({length:14},(_,i)=>{
+      const lx=(i*109+18)%w, ly=h*.04+(i*79)%(gY2-h*.06);
+      return `<ellipse cx="${lx}" cy="${ly}" rx="3" ry="1.8" fill="#f0b8cc" opacity="${.08+i%3*.03}" transform="rotate(${i*29},${lx},${ly})"/>`;
+    }).join('');
+  }
+
+  // Ground strip — very faint
+  const ground = `<rect x="0" y="${gY3}" width="${w}" height="${h-gY3}" fill="${s.ground}" opacity=".10"/>`;
+
+  // ── Stream ────────────────────────────────────────────────────────────────
+  // Sits in the foreground strip below hill3, meanders left→right
+  const sw = (h - gY3) * .22;   // half-width of stream band
+  // Three control points for the centre-line
+  const sAy = gY3 + (h-gY3)*.38;  // left entry
+  const sBx = w*.42, sBy = gY3 + (h-gY3)*.62; // mid bend (lower)
+  const sCy = gY3 + (h-gY3)*.44;  // right exit
+
+  // Water colour by season
+  const streamCols = {
+    snow:'#7ab8d8', 'snow-light':'#85bfdc',
+    'blossom-early':'#b8d8f0', 'blossom-full':'#b0d4f0',
+    'green-fresh':'#a4cce8', 'green-lush':'#98c8e4',
+    'autumn-early':'#a8c8e0', 'autumn-peak':'#a0c0dc', bare:'#aecce0',
+  };
+  const wCol = streamCols[s.treeTop] || '#b0cce0';
+
+  // Closed filled shape: upper edge then lower edge reversed
+  // Upper bank: offset sw upward from centre
+  // Lower bank: offset sw downward
+  // Using simple cubic beziers — no reverse logic needed, just explicit coords
+  const streamPath = `
+    M 0,${sAy - sw}
+    C ${w*.2},${sAy - sw}  ${sBx - w*.1},${sBy - sw*1.2}  ${sBx},${sBy - sw}
+    C ${sBx + w*.08},${sBy - sw*.8}  ${w*.82},${sCy - sw}  ${w},${sCy - sw}
+    L ${w},${sCy + sw}
+    C ${w*.82},${sCy + sw}  ${sBx + w*.08},${sBy + sw*.8}  ${sBx},${sBy + sw}
+    C ${sBx - w*.1},${sBy + sw*1.2}  ${w*.2},${sAy + sw}  0,${sAy + sw}
+    Z`;
+
+  // Shimmer highlight along centre
+  const shimmerPath = `M 0,${sAy} C ${w*.2},${sAy} ${sBx-w*.1},${sBy} ${sBx},${sBy} C ${sBx+w*.08},${sBy} ${w*.82},${sCy} ${w},${sCy}`;
+
+  // Ripple ellipses along the centre-line
+  const ripplePts = [
+    [w*.15, sAy + (sBy-sAy)*.25],
+    [w*.35, sAy + (sBy-sAy)*.7],
+    [w*.55, sBy + (sCy-sBy)*.3],
+    [w*.75, sBy + (sCy-sBy)*.72],
+  ];
+
+  // Clip path so animations stay within stream shape
+  const clipId = `streamClip_${Math.floor(Math.random()*99999)}`;
+
+  // Flowing wave stripes — offset sinusoidal paths animating left→right
+  const flowLineColor = (['snow','snow-light'].includes(s.treeTop)) ? '#4a8ab0' : 'white';
+  const flowLines = Array.from({length:7}, (_,i) => {
+    const yOff = (i - 3) * sw * 0.28;  // spread evenly across stream width
+    const dur = (2.8 + i * 0.22).toFixed(2);
+    const delay = -(i * 0.55).toFixed(2);
+    // Each line follows a path parallel to the centre, offset vertically
+    const lp = `M 0,${sAy+yOff} C ${w*.2},${sAy+yOff} ${sBx-w*.1},${sBy+yOff*0.7} ${sBx},${sBy+yOff*0.6} C ${sBx+w*.08},${sBy+yOff*0.5} ${w*.82},${sCy+yOff} ${w},${sCy+yOff}`;
+    const op = i===3 ? .22 : .11;  // centre line a touch brighter
+    return `<path d="${lp}" stroke="${flowLineColor}" stroke-width="${sw*.18}" fill="none" opacity="0" stroke-linecap="round">
+      <animate attributeName="opacity" values="0;${op};${op};0" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1;0.1 0 0.9 1;0.4 0 0.6 1"/>
+      <animate attributeName="stroke-dasharray" values="${w*.08} ${w*.6};${w*.12} ${w*.6};${w*.08} ${w*.6}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite"/>
+      <animate attributeName="stroke-dashoffset" values="${w*.5};${-w}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" calcMode="linear"/>
+    </path>`;
+  }).join('');
+
+  // Ripple ellipses that pulse and drift along the flow
+  const animRipples = ripplePts.map(([rx,ry], i) => {
+    const dur = (2.2 + i*0.35).toFixed(2);
+    const delay = -(i*0.7).toFixed(2);
+    const rx2 = sw * .7, ry2 = sw * .16;
+    return `<ellipse cx="${rx}" cy="${ry}" rx="${rx2}" ry="${ry2}" fill="none" stroke="${flowLineColor}" stroke-width="1.2" opacity="0">
+      <animate attributeName="opacity" values="0;.18;.18;0" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" calcMode="spline" keySplines="0.3 0 0.7 1;0.2 0 0.8 1;0.3 0 0.7 1"/>
+      <animate attributeName="rx" values="${rx2*.6};${rx2*1.2};${rx2*.6}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite"/>
+      <animate attributeName="ry" values="${ry2*.6};${ry2*1.3};${ry2*.6}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite"/>
+    </ellipse>`;
+  }).join('');
+
+  // Glint — a bright spot that slides along the shimmer path
+  const glintColor = (['snow','snow-light'].includes(s.treeTop)) ? '#4a8ab0' : 'white';
+  const glintDur = '3.5s';
+  const glint = `<circle r="${sw*.22}" fill="${glintColor}" opacity="0">
+    <animateMotion path="${shimmerPath}" dur="${glintDur}" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1"/>
+    <animate attributeName="opacity" values="0;.18;.22;.18;0" dur="${glintDur}" repeatCount="indefinite"/>
+    <animate attributeName="r" values="${sw*.15};${sw*.28};${sw*.18}" dur="${glintDur}" repeatCount="indefinite"/>
+  </circle>`;
+
+  const pebbles = [ [w*.1,sAy-sw*.75,sw*.16], [w*.32,sBy-sw*1.0,sw*.14], [w*.54,sBy+sw*.9,sw*.13], [w*.78,sCy-sw*.7,sw*.15] ]
+    .map(([px,py,pr])=>`<ellipse cx="${px}" cy="${py}" rx="${pr}" ry="${pr*.5}" fill="${s.hill3}" opacity=".15"/>`)
+    .join('');
+
+  const stream = `
+    <clipPath id="${clipId}"><path d="${streamPath}"/></clipPath>
+    <path d="${streamPath}" fill="${wCol}" opacity=".30"/>
+    <g clip-path="url(#${clipId})">
+      ${flowLines}
+      ${animRipples}
+      ${glint}
+    </g>
+    ${pebbles}`;
+
+  // Season label — bottom right, tasteful
+  const label = `<text x="${w-14}" y="${h*.96}" text-anchor="end" font-size="10.5" fill="${s.labelColor}" opacity=".35" font-family="system-ui,sans-serif" font-weight="400" letter-spacing=".02em">${s.label}</text>`;
+
+  // ── Barclays eagle — glides across the sky with S-curve thermal soaring ──
+  const eagleSize = h * 0.14;
+  const eagleDur  = '26s';
+  const eagleCol  = '#00AEEF'; // Barclays brand blue
+
+  // The Barclays eagle: accurate spread-wing silhouette in a 0 0 200 160 space.
+  // Wings fully extended, slight upward dihedral. Tail broad and fanned.
+  // Head turned left (direction of travel). Based on the official Barclays mark.
+  const eaglePath = `
+    M100,68
+    C 96,62  88,54  76,46  C 64,38  50,32  36,28  C 24,24  12,24   4,28
+    C  8,30  14,32  20,36  C 12,36   4,40   2,46
+    C  8,42  16,40  24,42  C 16,48  10,56  12,64
+    C 18,58  26,52  36,52  C 30,60  28,70  32,78
+    C 38,68  46,60  56,58  C 52,66  50,76  52,84
+    C 58,74  66,66  76,64
+    L 100,80
+    L 124,64
+    C 134,66  142,74  148,84  C 150,76  148,66  144,58
+    C 154,60  162,68  168,78  C 172,70  170,60  164,52
+    C 174,52  182,58  188,64  C 190,56  184,48  176,42
+    C 184,40  192,42  198,46  C 196,40  188,36  180,36
+    C 186,32  192,30  196,28  C 188,24  176,24  164,28
+    C 150,32  136,38  124,46  C 112,54  104,62  100,68 Z
+    M 88,88 C 86,96  84,108  84,116  C 90,108  96,100  100,96
+    C 104,100  110,108  116,116  C 116,108  114,96  112,88
+    C 108,92  104,94  100,94  C  96,94   92,92   88,88 Z`;
+
+  // animateMotion path: bird starts off right edge, follows S-curve, exits left.
+  // The path is relative to the bird's OWN origin (0,0 = top-left of its bbox).
+  // We position the bird via a wrapping <g> and animate it via motion path.
+  // startX offscreen right, endX offscreen left. Y undulates in a clear S-wave.
+  const mPathStartX = w + eagleSize * 2;
+  const mPathEndX   = -(eagleSize * 3);
+  const midY1 = -h * 0.10;  // rise
+  const midY2 =  h * 0.12;  // dip
+  const midY3 = -h * 0.08;  // rise again
+
+  const motionPath = `
+    M ${mPathStartX},0
+    C ${w*.80},${midY1}
+      ${w*.65},${midY1}
+      ${w*.50},0
+    C ${w*.36},${midY2}
+      ${w*.22},${midY2}
+      ${w*.12},${midY3}
+    C ${w*.06},${midY3}
+      0,${midY3 * 0.5}
+      ${mPathEndX},0`;
+
+  // Place the eagle group at a fixed sky Y, then let animateMotion add the delta
+  const eagleBaseY = gY1 * 0.30;
+
+  const eagleSVG = `
+    <g transform="translate(0, ${eagleBaseY})" opacity="0">
+      <animate attributeName="opacity"
+        values="0; .22; .22; .22; .22; .22; 0"
+        dur="${eagleDur}" repeatCount="indefinite"
+        calcMode="spline"
+        keyTimes="0; 0.06; 0.3; 0.5; 0.7; 0.94; 1"
+        keySplines="0.4 0 0.6 1; 0.1 0 0.9 1; 0.1 0 0.9 1; 0.1 0 0.9 1; 0.4 0 0.6 1; 0.4 0 0.6 1"/>
+      <g>
+        <animateMotion path="${motionPath}" dur="${eagleDur}" repeatCount="indefinite" calcMode="spline"
+          keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1"/>
+        <g transform="scale(${eagleSize / 200}) translate(-100, -80)">
+          <path d="${eaglePath}" fill="${eagleCol}"/>
+        </g>
+      </g>
+    </g>`;
+
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">${ns}${sky}${sunEl}${eagleSVG}${hill1}${particles}${hill2}${trees}${hill3}${ground}${stream}${label}</svg>`;
+}
+
+function ptColor(v){return v>=20?'#E24B4A':v>=10?'#EF9F27':'#1565C0';}
+let chart,animFrame,currentIdx=null,animDone=false,currentVar='max_rev_bal_amt_12_mth';
+
+function buildScene(lbl){
+  const sc=getScene(lbl);
+  const wrap=document.getElementById('chart-wrap');
+  wrap.style.background=sc.sky[1];
+  document.getElementById('scene-label').textContent=sc.label;
+  document.getElementById('scene-label').style.color=sc.labelColor;
+  document.getElementById('month-strip').style.background=sc.stripBg;
+  const w=wrap.offsetWidth||700;const h=320;
+  document.getElementById('bg-scene').innerHTML=drawScene(w,h,sc);
+  return sc;
+}
+
+function updateMetrics(lbl,csi){
+  document.getElementById('m-month').textContent=lbl;
+  const ce=document.getElementById('m-csi');
+  ce.textContent=csi.toFixed(1)+'%';
+  ce.className='mv '+(csi>=20?'danger':csi>=10?'warn':'ok');
+  const se=document.getElementById('m-sev');
+  if(csi>=20){se.textContent='HIGH';se.className='mv danger';}
+  else if(csi>=10){se.textContent='MODERATE';se.className='mv warn';}
+  else{se.textContent='STABLE';se.className='mv ok';}
+}
+
+function getDiag(varKey,lblKey){
+  const vd=varData[varKey];
+  if(!vd)return varData.max_rev_bal_amt_12_mth.diag.default;
+  return vd.diag[lblKey]||vd.diag.default;
+}
+
+function buildStrip(sc){
+  const strip=document.getElementById('month-strip');strip.innerHTML='';
+  const csi=varData[currentVar].csi;
+  labels.forEach((lbl,i)=>{
+    const isActive=i===currentIdx;
+    const isAlert=csi[i]>=10;
+    const cellSc=getScene(lbl);
+    const cell=document.createElement('div');cell.className='m-cell';
+    cell.style.color=isActive?'#fff':(isAlert?cellSc.activeBg:cellSc.stripColor);
+    cell.style.background=isActive?(isAlert?'#A32D2D':cellSc.activeBg):'transparent';
+    cell.style.fontWeight=isActive?'500':'400';
+    cell.textContent=shortLabels[i];cell.title=lbl;
+    cell.onclick=()=>{if(animDone)selectMonth(i);};
+    strip.appendChild(cell);
+  });
+}
+
+function getData(n,csiArr){return csiArr.slice(0,n).concat(Array(csiArr.length-n).fill(null));}
+
+function buildChart(n,csiArr){
+  if(chart){chart.destroy();chart=null;}
+  const ctx=document.getElementById('csiChart').getContext('2d');
+  const d=getData(n,csiArr);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart=new Chart(ctx,{type:'line',data:{labels:shortLabels,datasets:[
+    {label:'CSI',data:d,borderColor:'#1565C0',backgroundColor:'rgba(21,101,192,0.08)',fill:true,tension:0.38,
+     pointRadius:d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5)),
+     pointBackgroundColor:d.map(v=>v===null?'transparent':ptColor(v)),
+     pointBorderColor:d.map((v,i)=>i===currentIdx?'#fff':'transparent'),
+     pointBorderWidth:d.map((v,i)=>i===currentIdx?2:0),borderWidth:2.5,spanGaps:false},
+    {label:'Moderate',data:Array(labels.length).fill(10),borderColor:'#EF9F27',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false},
+    {label:'High',data:Array(labels.length).fill(20),borderColor:'#E24B4A',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},
+    plugins:{legend:{display:false},tooltip:{filter:item=>item.datasetIndex===0&&item.raw!==null,callbacks:{label:c=>'CSI: '+c.parsed.y.toFixed(1)+'%'}}},
+    onClick(e,els){if(!animDone)return;if(els.length&&els[0].datasetIndex===0)selectMonth(els[0].index);},
+    scales:{x:{ticks:{color:'rgba(0,0,0,0)',maxRotation:0},grid:{display:false},border:{display:false}},
+    y:{min:0,max:yMax,ticks:{font:{size:10},color:'#666',callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}});
+}
+
+function updateChart(n,csiArr){
+  if(!chart)return;
+  const d=getData(n,csiArr);
+  chart.data.datasets[0].data=d;
+  chart.data.datasets[0].pointRadius=d.map((v,i)=>v===null?0:(i===currentIdx?7:3.5));
+  chart.data.datasets[0].pointBorderColor=d.map((v,i)=>i===currentIdx?'#fff':'transparent');
+  chart.data.datasets[0].pointBorderWidth=d.map((v,i)=>i===currentIdx?2:0);
+  const yMax=Math.max(24,...csiArr)*1.08;
+  chart.options.scales.y.max=yMax;
+  chart.update('none');
+}
+
+// ── Distribution shift & stats data per variable per high-CSI month ──────
+const diagTableData={
+  max_rev_bal_amt_12_mth:{
+    '202603':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 780,1240,1860,1580,1640],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3660},
+        {m:'Median', tr:3064, vl:3595},
+        {m:'Std Dev',tr:1521, vl:2408},
+        {m:'P99',    tr:7912, vl:9916},
+        {m:'Skew',   tr:0.99, vl:0.38},
+      ]
+    },
+    '202602':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 890,1450,1960,1720,1520],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3510},
+        {m:'Median', tr:3064, vl:3280},
+        {m:'Std Dev',tr:1521, vl:1980},
+        {m:'P99',    tr:7912, vl:9100},
+        {m:'Skew',   tr:0.99, vl:0.58},
+      ]
+    },
+    '202601':{
+      bins:['0–2k','2k–3k','3k–4k','4k–5k','5k+'],
+      train:[1020,1680,2050,1900,1380],
+      val:  [ 960,1580,2000,1820,1440],
+      stats:[
+        {m:'Mean',   tr:3357, vl:3430},
+        {m:'Median', tr:3064, vl:3140},
+        {m:'Std Dev',tr:1521, vl:1680},
+        {m:'P99',    tr:7912, vl:8350},
+        {m:'Skew',   tr:0.99, vl:0.82},
+      ]
+    }
+  },
+  avg_bal_6_mth:{
+    '202603':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [ 980,1520,1480, 980, 680],
+      stats:[
+        {m:'Mean',   tr:2180, vl:1920},
+        {m:'Median', tr:1980, vl:1720},
+        {m:'Std Dev',tr:1240, vl:1380},
+        {m:'P99',    tr:5800, vl:6200},
+        {m:'Skew',   tr:1.12, vl:1.34},
+      ]
+    },
+    '202602':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [1060,1640,1540,1020, 700],
+      stats:[
+        {m:'Mean',   tr:2180, vl:2050},
+        {m:'Median', tr:1980, vl:1840},
+        {m:'Std Dev',tr:1240, vl:1310},
+        {m:'P99',    tr:5800, vl:6050},
+        {m:'Skew',   tr:1.12, vl:1.24},
+      ]
+    },
+    '202601':{
+      bins:['0–1k','1k–2k','2k–3k','3k–4k','4k+'],
+      train:[1240,1820,1650,1100, 740],
+      val:  [1150,1740,1600,1060, 720],
+      stats:[
+        {m:'Mean',   tr:2180, vl:2110},
+        {m:'Median', tr:1980, vl:1920},
+        {m:'Std Dev',tr:1240, vl:1280},
+        {m:'P99',    tr:5800, vl:5940},
+        {m:'Skew',   tr:1.12, vl:1.18},
+      ]
+    }
+  },
+  bt_spend_amt_6_mth:{
+    '202603':{
+      bins:['0–500','500–1k','1k–2k','2k–3k','3k+'],
+      train:[1580,1920,1640,1020, 640],
+      val:  [1280,1680,1780,1140, 820],
+      stats:[
+        {m:'Mean',   tr:1240, vl:1480},
+        {m:'Median', tr:1080, vl:1280},
+        {m:'Std Dev',tr: 820, vl:1060},
+        {m:'P99',    tr:3800, vl:4600},
+        {m:'Skew',   tr:1.08, vl:0.92},
+      ]
+    },
+    '202602':{
+      bins:['0–500','500–1k','1k–2k','2k–3k','3k+'],
+      train:[1580,1920,1640,1020, 640],
+      val:  [1420,1820,1700,1060, 700],
+      stats:[
+        {m:'Mean',   tr:1240, vl:1360},
+        {m:'Median', tr:1080, vl:1180},
+        {m:'Std Dev',tr: 820, vl: 940},
+        {m:'P99',    tr:3800, vl:4200},
+        {m:'Skew',   tr:1.08, vl:0.98},
+      ]
+    }
+  }
+};
+
+function fmtNum(v){
+  if(Math.abs(v)<10) return v.toFixed(2);
+  return Math.round(v).toLocaleString();
+}
+
+function buildDiagTables(varKey, monthKey){
+  const panel=document.getElementById('diag-tables');
+  const vmap=diagTableData[varKey];
+  if(!vmap||!vmap[monthKey]){panel.style.display='none';return;}
+  const td=vmap[monthKey];
+  panel.style.display='block';
+
+  // ── max bar value for scaling
+  const maxBar=Math.max(...td.train,...td.val);
+
+  // ── Distribution shift: horizontal grouped bars
+  const barsHTML=td.bins.map((bin,i)=>{
+    const tw=Math.round(td.train[i]/maxBar*100);
+    const vw=Math.round(td.val[i]/maxBar*100);
+    return `<div class="dshift-row">
+      <div class="dshift-bin">${bin}</div>
+      <div class="dshift-bars">
+        <div class="dshift-bar" style="width:${tw}%;background:#3a7bd5" title="Training: ${td.train[i].toLocaleString()}"></div>
+        <div class="dshift-bar" style="width:${vw}%;background:#d94f2a" title="Validation: ${td.val[i].toLocaleString()}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Stats table rows
+  const statsHTML=td.stats.map((r,i)=>{
+    const diff=r.vl-r.tr;
+    const sign=diff>0?'+':'';
+    const cls=diff>0?'delta-up':diff<0?'delta-down':'delta-neutral';
+    const bg=i%2===0?'':'rgba(0,0,0,.018)';
+    return `<tr style="background:${bg}">
+      <td class="col-metric">${r.m}</td>
+      <td class="col-train">${fmtNum(r.tr)}</td>
+      <td class="col-val">${fmtNum(r.vl)}</td>
+      <td class="col-delta ${cls}">${sign}${fmtNum(diff)}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML=`<div class="dtables">
+    <div class="dtable-section">
+      <div class="dtable-heading">
+        <span class="dtable-heading-dot" style="background:linear-gradient(135deg,#3a7bd5,#d94f2a)"></span>
+        Distribution Shift
+      </div>
+      <div class="dshift-grid">${barsHTML}</div>
+      <div class="dshift-legend">
+        <span class="dshift-leg"><span class="dshift-leg-sq" style="background:#3a7bd5"></span>Training</span>
+        <span class="dshift-leg"><span class="dshift-leg-sq" style="background:#d94f2a"></span>Validation</span>
+      </div>
+    </div>
+    <div class="dtable-section">
+      <div class="dtable-heading">
+        <span class="dtable-heading-dot" style="background:linear-gradient(135deg,#7c3aed,#2563eb)"></span>
+        Statistical Changes
+      </div>
+      <table class="stats-tbl">
+        <thead><tr>
+          <th class="col-metric">Metric</th>
+          <th class="col-train">Training</th>
+          <th class="col-val">Validation</th>
+          <th class="col-delta">Δ</th>
+        </tr></thead>
+        <tbody>${statsHTML}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // Animate bars in
+  setTimeout(()=>{
+    panel.querySelectorAll('.dshift-bar').forEach((b,i)=>{
+      const target=b.style.width;b.style.width='0';
+      setTimeout(()=>{b.style.width=target;},i*35+80);
+    });
+  },50);
+}
+
+function buildRootCauseTable(varKey, key, csi){
+  const rbox=document.getElementById('rbox');
+  const panel=document.getElementById('diag-tables');
+  rbox.innerHTML='';
+  panel.style.display='none';
+
+  const rcData={
+    max_rev_bal_amt_12_mth:{
+      subtitle:'CSI Drift · max_rev_bal_amt_12_mth',
+      rows:[
+        {
+          num:'#1', pct:'~45%', pctCls:'pct-critical', accentColor:'#c0392b',
+          desc:'FICO credit quality deterioration',
+          why:['Fed held rates at 22–28% APR through 2023–2025','Minimum payments no longer cover accruing interest','Balances compound even without incremental spend','Utilization ratios rise mechanically → FICO scores decline','Formerly prime customers migrate into near-prime and subprime bands','Subprime accounts carry higher revolving balances due to limited paydown capacity'],
+          evidence:[{l:'Subprime (&lt;600)',v:'2.7% → 15.4%',cls:'ev-up',bold:'(+12.6pp)'},{l:'High-quality (720+)',v:'51.6% → 42.5%',cls:'ev-down',bold:'(−9.1pp)'}],
+          effect:'Sustained upward pressure on REVOL balances; portfolio risk mix drifted away from model training assumptions',
+          tag:'Rank-ordering degraded', tagCls:'tag-danger'
+        },
+        {
+          num:'#2', pct:'~30%', pctCls:'pct-major', accentColor:'#d35400',
+          desc:'High-FICO balance accumulation',
+          why:['Even creditworthy borrowers faced 27 months of APR compounding','Inflation eroded excess liquidity and delayed pay-in-full behavior','Rate relief arrived too late to prevent balance buildup','Behavioral shift from transactor to partial revolver despite strong credit'],
+          evidence:[{l:'Super-prime (720–780)',v:'+30%',cls:'ev-up',bold:''},{l:'Excellent (780+)',v:'+37%',cls:'ev-up',bold:''},{l:'Avg balance shift',v:'$1,100 → $1,511',cls:'ev-up',bold:'(+$411)'}],
+          effect:'REVOL growth not isolated to subprime; high-FICO revolvers distort rank-ordering',
+          tag:'Score calibration affected', tagCls:'tag-warn'
+        },
+        {
+          num:'#3', pct:'~15%', pctCls:'pct-info', accentColor:'#1565C0',
+          desc:'Seasonal timing wedge',
+          why:['Dec 2023 holiday spike used as CSI baseline','Seasonal spend inflated December balances','Customers paid down balances in January (year-end bonuses, holiday resolution)','January normalization not captured in baseline reference point'],
+          evidence:[{l:'Dec 2023 baseline',v:'Overstates true max revolve vs Jan-normalized behavior',cls:'ev-warn',bold:''}],
+          effect:'CSI mechanically overstated due to baseline misalignment',
+          tag:'Baseline recalibration needed', tagCls:'tag-info'
+        },
+        {
+          num:'#4', pct:'~10%', pctCls:'pct-minor', accentColor:'#27ae60',
+          desc:'Transaction behavior & spending concentration',
+          why:['Prolonged high rates caused "wallet rationalization"','Consumers consolidated spend onto one premium rewards card','Premium cards attract higher-ticket and travel-dense transactions','Smaller cards lose low-value transactions','Fewer but larger transactions inflate statement balances'],
+          evidence:[{l:'Mastercard Black Card txns',v:'+62.3%',cls:'ev-up',bold:''},{l:'Volume share',v:'+3.6pp',cls:'ev-up',bold:''},{l:'JetBlue Card',v:'−21.5%',cls:'ev-down',bold:''},{l:'Barclays View',v:'−21.5%',cls:'ev-down',bold:''},{l:'Eating Places & Restaurants',v:'+34.9%',cls:'ev-up',bold:''}],
+          effect:'Right-skewed balance distribution; REVOL_BAL_MAX_12M structurally inflated',
+          tag:'Distribution shift — right tail', tagCls:'tag-warn'
+        }
+      ]
+    }
+  };
+
+  const cfg=rcData[varKey];
+  if(!cfg){return false;}
+
+  const rowsHTML=cfg.rows.map((r,ri)=>`
+    <tr class="rc-tr" style="--accent:${r.accentColor}">
+      <td class="col-id">
+        <div class="rc-badge-inner">
+          <span class="rc-num">ROOT CAUSE ${r.num}</span>
+          <span class="rc-pct ${r.pctCls}">${r.pct}</span>
+        </div>
+      </td>
+      <td class="col-desc">${r.desc}</td>
+      <td class="col-why"><ul class="why-list">${r.why.map(w=>`<li><span class="why-dot" style="background:${r.accentColor}"></span>${w}</li>`).join('')}</ul></td>
+      <td class="col-evidence"><div class="ev-grid">${r.evidence.map(e=>`
+        <div class="ev-item">
+          <span class="ev-label">${e.l}</span>
+          <span class="ev-val ${e.cls}">${e.v}${e.bold?` <strong>${e.bold}</strong>`:''}</span>
+        </div>`).join('')}</div></td>
+      <td class="col-effect">
+        <div class="effect-text">${r.effect}</div>
+        <span class="effect-tag ${r.tagCls}">${r.tag}</span>
+      </td>
+    </tr>`).join('');
+
+  rbox.innerHTML=`
+    <div class="rc-table-wrap">
+      <table class="rc-table">
+        <thead><tr>
+          <th>Root Cause</th><th>Description</th><th>Why</th><th>Evidence / Metrics</th><th>Net Effect on CSI / Model</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+      <div class="rc-footer">
+        <div class="rc-footer-dot"></div>
+        Analysis based on ${key} OOT window · CSI ${csi.toFixed(1)}% — critical threshold breached · Immediate segment-level overlays and strategic model rebuild recommended
+      </div>
+    </div>`;
+
+  // stagger-animate rows in
+  setTimeout(()=>{
+    rbox.querySelectorAll('.rc-tr').forEach((tr,i)=>{
+      tr.style.opacity='0';tr.style.transform='translateY(8px)';tr.style.transition='opacity .3s, transform .3s';
+      setTimeout(()=>{tr.style.opacity='1';tr.style.transform='translateY(0)';},i*90+60);
+    });
+  },30);
+
+  return true;
+}
+
+function selectMonth(idx){
+  currentIdx=idx;
+  const key=labels[idx];const csi=varData[currentVar].csi[idx];
+  let d=getDiag(currentVar,key);
+  if(csi<10){
+    const vd=varData[currentVar];
+    const baseline=modelConfigs[currentModel].devBaseline;
+    d={badge:'No Drift Detected',cls:'',reasons:[
+      {ic:'✓',t:`CSI &lt; 10% — distribution stable. <strong>${vd.label}</strong> closely tracks the ${baseline} development baseline. No corrective action required.`}
+    ]};
+  }
+  document.getElementById('llm-badge').textContent=d.badge;
+  document.getElementById('llm-badge').className='llm-badge'+(d.cls?' '+d.cls:'');
+  document.getElementById('pulse').className='pulse'+(d.cls?' '+d.cls:'');
+
+  // For HIGH severity on supported variables, show root cause table in rbox
+  // but always keep the distribution charts (diag-tables) below
+  if(csi>=20 && buildRootCauseTable(currentVar, key, csi)){
+    buildDiagTables(currentVar, key);
+  } else {
+    const rbox=document.getElementById('rbox');rbox.innerHTML='';
+    d.reasons.forEach((r,i)=>{
+      const el=document.createElement('div');el.className='rl';
+      const ic=r.ic==='✕'?'#A32D2D':r.ic==='△'?'#854F0B':'#3B6D11';
+      el.innerHTML=`<span class="ri" style="color:${ic}">${r.ic}</span><span class="rt">${r.t}</span>`;
+      rbox.appendChild(el);setTimeout(()=>el.classList.add('show'),i*180);
+    });
+    if(csi<10){
+      document.getElementById('diag-tables').style.display='none';
+    } else {
+      buildDiagTables(currentVar, key);
+    }
+  }
+  updateMetrics(key,csi);
+  const st=buildScene(key);
+  updateChart(labels.length,varData[currentVar].csi);
+  buildStrip(st);
+  updateVOVActive();
+}
+
+function animBar(fId,vId,target){
+  const fill=document.getElementById(fId),val=document.getElementById(vId);
+  fill.style.width=target+'%';let cur=0;const step=target/28;
+  const t=setInterval(()=>{cur=Math.min(cur+step,target);val.textContent=Math.round(cur)+'%';if(cur>=target)clearInterval(t);},28);
+}
+
+function animateLine(varKey){
+  cancelAnimationFrame(animFrame);animDone=false;currentIdx=null;
+  const csiArr=varData[varKey].csi;
+  let count=0;const total=labels.length;
+  buildChart(0,csiArr);
+  const st0=buildScene(labels[0]);buildStrip(st0);
+  updateMetrics(labels[0],csiArr[0]);
+  document.getElementById('rbox').innerHTML='<span class="placeholder-msg">Click any month label below the chart to generate drift diagnostics.</span>';
+  document.getElementById('diag-tables').style.display='none';
+  document.getElementById('llm-badge').textContent='Select a month';
+  document.getElementById('llm-badge').className='llm-badge';
+  document.getElementById('pulse').className='pulse';
+  document.getElementById('chart-title').innerHTML=`Monthly CSI — <strong>${varKey}</strong> — click any month to inspect`;
+  const step=()=>{
+    count=Math.min(count+1,total);
+    updateChart(count,csiArr);
+    const lbl=labels[count-1];
+    const st2=buildScene(lbl);buildStrip(st2);
+    updateMetrics(lbl,csiArr[count-1]);
+    if(count<total){animFrame=requestAnimationFrame(()=>setTimeout(step,320));}
+    else{animDone=true;currentIdx=total-1;selectMonth(total-1);}
+  };
+  setTimeout(step,400);
+}
+
+// ── Variable Overview Heatmap ─────────────────────────────────────────────
+function buildVOV(modelKey){
+  const cfg=modelConfigs[modelKey];
+  const tbl=document.getElementById('vov-table');
+  tbl.innerHTML='';
+
+  // Header row: empty label cell + month columns
+  const hdr=document.createElement('tr');
+  const thEmpty=document.createElement('th');
+  thEmpty.className='vov-var-lbl';
+  thEmpty.textContent='Feature \\ Month';
+  hdr.appendChild(thEmpty);
+  shortLabels.forEach(sl=>{
+    const th=document.createElement('th');
+    th.textContent=sl;
+    hdr.appendChild(th);
+  });
+  tbl.appendChild(hdr);
+
+  // Data rows: one per variable
+  cfg.vars.forEach(varKey=>{
+    const vd=varData[varKey];
+    if(!vd)return;
+    const tr=document.createElement('tr');
+
+    // Label cell
+    const tdLbl=document.createElement('td');
+    tdLbl.className='vov-var-lbl';
+    tdLbl.title=varKey;
+    tdLbl.textContent=varKey;
+    tr.appendChild(tdLbl);
+
+    // CSI cells
+    vd.csi.forEach((csiVal,mi)=>{
+      const td=document.createElement('td');
+      td.style.padding='1px';
+      const cell=document.createElement('div');
+      cell.className='vov-cell '+(csiVal>=20?'vov-danger':csiVal>=10?'vov-warn':'vov-ok');
+      cell.textContent=csiVal.toFixed(1)+'%';
+      cell.title=`${varKey} · ${labels[mi]} · CSI ${csiVal.toFixed(1)}%`;
+      cell.dataset.varKey=varKey;
+      cell.dataset.mi=mi;
+      cell.addEventListener('click',()=>{
+        // Switch variable dropdown + jump to that month
+        const sel=document.getElementById('varSelect');
+        sel.value=varKey;
+        currentVar=varKey;
+        animateLine(varKey);
+        // after animation settles, select the month
+        setTimeout(()=>{
+          selectMonth(parseInt(cell.dataset.mi));
+        }, labels.length*320+500);
+      });
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+  updateVOVActive();
+}
+
+function updateVOVActive(){
+  document.querySelectorAll('.vov-cell').forEach(c=>{
+    c.classList.toggle('active',
+      c.dataset.varKey===currentVar && parseInt(c.dataset.mi)===currentIdx
+    );
+  });
+}
+
+
+const modelConfigs={
+  pcli:{
+    label:'PCLI Uplift Model',
+    devBaseline:'202312',
+    vars:['max_rev_bal_amt_12_mth','slope_rev_bal_amt_12_mth','mean_rev_bal_amt_12_mth','avg_tran_amt_24_mth','max_restaurant_tran_amt_6mth']
+  },
+  balance_attrition:{
+    label:'Balance Attrition Model',
+    devBaseline:'202306',
+    vars:['avg_bal_6_mth','max_bal_12_mth','slope_bal_6_mth','util_rate_12_mth','min_payment_ratio_12_mth']
+  },
+  bt_uplift:{
+    label:'BT Uplift Model',
+    devBaseline:'202309',
+    vars:['bt_spend_amt_6_mth','avg_bt_tran_cnt_12_mth','max_bt_amt_3_mth','slope_bt_spend_12_mth','bt_util_rate_6_mth']
+  }
+};
+
+// Extra varData for Balance Attrition and BT Uplift models
+const extraVarData={
+  // ── Balance Attrition ──────────────────────────────────────
+  avg_bal_6_mth:{
+    label:'avg_bal_6_mth',
+    csi:[2.1,2.4,2.2,2.6,2.3,2.8,3.1,5.2,9.4,14.8,18.5],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> 6-month average balance closely tracks the Jun 2023 development baseline. No corrective action required.'},
+        {ic:'✓',t:'No macro or seasonal anomaly detected. Consumer balance behavior is consistent with expectations.'}
+      ],dist:5,macro:3,seas:6},
+      '202601':{badge:'Watch — Approaching Threshold',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 9.4%, nearing the 10% threshold.</strong> Early upward drift detected in avg_bal_6_mth. Post-holiday paydown compressing short-term balances vs. Jun 2023 baseline.'},
+        {ic:'△',t:'Accelerated paydown behavior linked to post-rate-cut consumer deleveraging. Seasonal pattern plausible — continue monitoring into Q2.'}
+      ],dist:38,macro:32,seas:26},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 14.8%, above 10% threshold.</strong> Average 6-month balance materially lower than baseline. Structural deleveraging continues in early 2026.'},
+        {ic:'△',t:'Attrition model inputs may overestimate balance retention. Investigate score calibration and lift curve stability.'}
+      ],dist:55,macro:70,seas:30},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 18.5% — near critical threshold.</strong> Balance distribution shifted materially from Jun 2023 baseline. Avg_bal_6_mth systematically lower than development period.'},
+        {ic:'△',t:'Recommend recalibration with a more recent baseline window or segment-level score overlays.'}
+      ],dist:80,macro:85,seas:40}
+    }
+  },
+  max_bal_12_mth:{label:'max_bal_12_mth',csi:seed1,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum 12-month balance distribution tracks Jun 2023 baseline. No material shift in high-balance segment.'},{ic:'✓',t:'No macro or seasonal signal. Model input remains representative.'}],dist:3,macro:2,seas:4}}},
+  slope_bal_6_mth:{label:'slope_bal_6_mth',csi:seed2,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Slope of 6-month balance trend shows no directional shift. Rate of balance change consistent with baseline.'},{ic:'✓',t:'No anomaly detected across segments.'}],dist:3,macro:2,seas:3}}},
+  util_rate_12_mth:{label:'util_rate_12_mth',csi:seed3,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 12-month utilization rate distribution tracks baseline closely. No significant behavioral shift.'},{ic:'✓',t:'Credit utilization behavior consistent with Jun 2023 development window.'}],dist:4,macro:3,seas:5}}},
+  min_payment_ratio_12_mth:{label:'min_payment_ratio_12_mth',csi:seed4,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Minimum payment ratio shows no delinquency pattern shift. Payment behavior consistent with Jun 2023 baseline.'},{ic:'✓',t:'No risk signal detected.'}],dist:3,macro:2,seas:4}}},
+
+  // ── BT Uplift ──────────────────────────────────────────────
+  bt_spend_amt_6_mth:{
+    label:'bt_spend_amt_6_mth',
+    csi:[1.5,1.8,1.6,2.0,1.7,2.2,2.5,3.8,7.1,11.9,15.6],
+    diag:{
+      default:{badge:'No Drift Detected',cls:'',reasons:[
+        {ic:'✓',t:'<strong>CSI &lt; 10% — distribution stable.</strong> 6-month BT spend closely tracks the Sep 2023 baseline. Balance transfer volume consistent with campaign response patterns.'},
+        {ic:'✓',t:'No macro or seasonal anomaly detected. No corrective action required.'}
+      ],dist:4,macro:3,seas:6},
+      '202601':{badge:'Watch — Early Uptick',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 7.1%, trending upward.</strong> BT spend showing early divergence from Sep 2023 baseline. Rate environment changes beginning to alter transaction size distribution.'},
+        {ic:'✓',t:'Still within acceptable range. Flag for next review cycle.'}
+      ],dist:30,macro:40,seas:18},
+      '202602':{badge:'Moderate Drift — Investigate',cls:'warn',reasons:[
+        {ic:'△',t:'<strong>CSI 11.9%, above 10% threshold.</strong> BT spend meaningfully shifted. Lower promotional APR environment driving larger average BT amounts vs. Sep 2023.'},
+        {ic:'△',t:'Uplift scores may undervalue high-spend BT segment. Investigate lift curve stability.'}
+      ],dist:52,macro:62,seas:26},
+      '202603':{badge:'HIGH Severity — Model Review Required',cls:'danger',reasons:[
+        {ic:'✕',t:'<strong>CSI 15.6% — approaching critical threshold.</strong> BT spend distribution materially shifted. Sustained rate cuts driving structural change in BT behavior; Sep 2023 baseline no longer representative.'},
+        {ic:'△',t:'Recommend champion/challenger test with recently redeveloped BT uplift model.'}
+      ],dist:76,macro:82,seas:36}
+    }
+  },
+  avg_bt_tran_cnt_12_mth:{label:'avg_bt_tran_cnt_12_mth',csi:seed2,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> 12-month average BT transaction count tracks Sep 2023 baseline. BT frequency behavior consistent with development period.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:4}}},
+  max_bt_amt_3_mth:{label:'max_bt_amt_3_mth',csi:seed3,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> Maximum 3-month BT amount distribution is stable. No spike in large BT transactions.'},{ic:'✓',t:'No macro signal detected.'}],dist:3,macro:2,seas:4}}},
+  slope_bt_spend_12_mth:{label:'slope_bt_spend_12_mth',csi:seed1,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> BT spend slope shows no directional trend shift. Rate of change consistent with Sep 2023 development window.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:3}}},
+  bt_util_rate_6_mth:{label:'bt_util_rate_6_mth',csi:seed4,diag:{default:{badge:'No Drift Detected',cls:'',reasons:[{ic:'✓',t:'<strong>CSI &lt; 2% — fully stable.</strong> BT utilization rate stable over 6-month window. Consistent with Sep 2023 baseline.'},{ic:'✓',t:'No anomaly detected.'}],dist:3,macro:2,seas:4}}}
+};
+
+// Merge extraVarData into varData
+Object.assign(varData, extraVarData);
+
+let currentModel='pcli';
+
+function switchModel(modelKey){
+  currentModel=modelKey;
+  const cfg=modelConfigs[modelKey];
+  document.getElementById('m-dev').textContent=cfg.devBaseline;
+  const sel=document.getElementById('varSelect');
+  sel.innerHTML='';
+  cfg.vars.forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v;opt.textContent=v;
+    sel.appendChild(opt);
+  });
+  currentVar=cfg.vars[0];
+  buildVOV(modelKey);
+  animateLine(currentVar);
+}
+
+document.getElementById('modelSelect').addEventListener('change',function(){
+  switchModel(this.value);
+});
+
+document.getElementById('varSelect').addEventListener('change',function(){
+  currentVar=this.value;
+  animateLine(currentVar);
+});
+
+animateLine(currentVar);
+buildVOV(currentModel);
+</script>
