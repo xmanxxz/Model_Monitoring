@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Barclays — LLM Model vs Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#00395D;overflow:hidden;width:100vw;height:100vh}
+canvas{display:block}
+#ui{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(0,57,93,.92);
+  border-top:2px solid rgba(0,174,239,.3);display:flex;align-items:center;
+  justify-content:center;gap:16px;z-index:100}
+.btn{background:none;border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);
+  font-family:'Caveat',cursive;font-size:16px;padding:6px 20px;border-radius:30px;cursor:pointer;
+  transition:all .2s}
+.btn:hover{background:rgba(0,174,239,.2);border-color:#00AEEF;color:white}
+#tl-wrap{width:260px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;cursor:pointer}
+#tl-fill{height:100%;background:#00AEEF;border-radius:3px;width:0%;transition:width .15s linear}
+#lbl{font-family:'Caveat',cursive;font-size:15px;color:rgba(255,255,255,.5);min-width:44px}
+#stitle{font-family:'Caveat',cursive;font-size:15px;color:rgba(255,255,255,.6);min-width:200px;text-align:center}
+#dots{position:fixed;bottom:62px;left:50%;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:100}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .2s}
+.dot.on{background:#00AEEF;transform:scale(1.4)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="dots"></div>
+<div id="ui">
+  <button class="btn" id="playBtn">⏸</button>
+  <button class="btn" id="rstBtn">↩</button>
+  <div id="tl-wrap"><div id="tl-fill"></div></div>
+  <div id="lbl">0:00</div>
+  <div id="stitle">Intro</div>
+</div>
+
+<script>
+// ═══════════════════════════════
+// CANVAS + ENGINE
+// ═══════════════════════════════
+const cvs=document.getElementById('c');
+const ctx=cvs.getContext('2d');
+let W,H;
+const resize=()=>{W=cvs.width=innerWidth;H=cvs.height=innerHeight-56;};
+resize();addEventListener('resize',resize);
+
+let T=0,paused=false,lastTs=null;
+const TOTAL=88;
+const ease=x=>1-Math.pow(1-x,3);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const prog=(s,d,t)=>clamp((t-s)/d,0,1);
+
+// ═══════════════════════════════
+// BARCLAYS PALETTE
+// ═══════════════════════════════
+const B={
+  navy:'#00395D',   // primary dark
+  blue:'#00AEEF',   // signature eagle blue
+  mid:'#005B8C',    // mid navy
+  pale:'#E8F4FB',   // light blue bg
+  white:'#FFFFFF',
+  offWhite:'#F4F7FA',
+  paper:'#FAFAF8',
+  ink:'#1A2B3C',
+  slate:'#4A6070',
+  muted:'#8BA5B5',
+  red:'#D0021B',
+  amber:'#F5A623',
+  green:'#27AE60',
+  purple:'#7B2D8B',
+};
+
+// ═══════════════════════════════
+// DRAW HELPERS
+// ═══════════════════════════════
+function clr(){
+  // clean white paper bg
+  ctx.fillStyle=B.paper;ctx.fillRect(0,0,W,H);
+  // very subtle horizontal rules
+  ctx.strokeStyle='rgba(0,57,93,.06)';ctx.lineWidth=1;
+  for(let y=48;y<H;y+=48){
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+}
+
+function txt(t,x,y,o={}){
+  const{size=18,color=B.ink,align='left',weight='400',alpha=1}=o;
+  ctx.save();ctx.globalAlpha*=alpha;
+  ctx.font=`${weight} ${size}px Caveat`;ctx.fillStyle=color;ctx.textAlign=align;
+  t.split('\n').forEach((l,i)=>ctx.fillText(l,x,y+i*(size*1.3)));
+  ctx.restore();
+}
+
+function rbox(x,y,w,h,o={}){
+  const{fill=B.white,stroke=null,lw=2,r=10,a=1}=o;
+  ctx.save();ctx.globalAlpha*=a;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);
+  ctx.fillStyle=fill;ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+  ctx.restore();
+}
+
+function shadow(x,y,w,h,r=12){
+  ctx.save();ctx.shadowColor='rgba(0,57,93,.14)';ctx.shadowBlur=18;ctx.shadowOffsetY=4;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=B.white;ctx.fill();
+  ctx.restore();
+}
+
+function pill(x,y,w,h,fill,label,labelColor=B.white,size=15){
+  rbox(x,y,w,h,{fill,r:h/2});
+  txt(label,x+w/2,y+h/2+size*.36,{size,color:labelColor,align:'center',weight:'700'});
+}
+
+// ── Barclays Eagle (simplified SVG-in-canvas) ──
+function eagle(x,y,s=1,a=1){
+  ctx.save();ctx.globalAlpha*=a;ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=B.blue;
+  // wing left
+  ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-28,-8,-46,4,-40,20);
+  ctx.bezierCurveTo(-32,14,-18,10,0,16);ctx.closePath();ctx.fill();
+  // wing right
+  ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(28,-8,46,4,40,20);
+  ctx.bezierCurveTo(32,14,18,10,0,16);ctx.closePath();ctx.fill();
+  // body
+  ctx.beginPath();ctx.ellipse(0,10,8,14,0,0,Math.PI*2);ctx.fill();
+  // head
+  ctx.beginPath();ctx.arc(0,-4,6,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+// ── Top bar per scene ──
+function topbar(title,subtitle='',a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  // bar
+  ctx.fillStyle=B.navy;ctx.fillRect(0,0,W,64);
+  // blue accent line
+  ctx.fillStyle=B.blue;ctx.fillRect(0,62,W,3);
+  // eagle
+  eagle(46,32,.8);
+  // BARCLAYS wordmark
+  txt('BARCLAYS',86,42,{size:18,color:B.white,weight:'700'});
+  // scene title
+  txt(title,W/2,40,{size:26,color:B.white,align:'center',weight:'700'});
+  if(subtitle) txt(subtitle,W/2,54+22,{size:17,color:B.blue,align:'center'});
+  // right: Model Monitoring badge
+  rbox(W-200,14,190,36,{fill:B.blue+'33',stroke:B.blue,lw:1.5,r:8});
+  txt('Model Monitoring',W-105,38,{size:15,color:B.blue,align:'center',weight:'600'});
+  ctx.restore();
+}
+
+// ── ROBOT (LLM Model character) ──
+function robot(x,y,o={}){
+  const{s=1,emo='ok',a=1,arm=0}=o;
+  ctx.save();ctx.globalAlpha*=a;ctx.translate(x,y);ctx.scale(s,s);
+  ctx.lineCap='round';ctx.lineJoin='round';
+
+  // shadow
+  ctx.beginPath();ctx.ellipse(0,62,18,5,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,57,93,.1)';ctx.fill();
+
+  // antenna
+  ctx.strokeStyle=B.navy;ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(0,-56);ctx.lineTo(0,-72);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,-76,6,0,Math.PI*2);
+  ctx.fillStyle=B.blue;ctx.fill();ctx.strokeStyle=B.navy;ctx.lineWidth=1.5;ctx.stroke();
+
+  // head
+  rbox(-26,-56,52,40,{fill:B.pale,stroke:B.navy,lw:2.5,r:8});
+  // visor screen
+  rbox(-20,-52,40,22,{fill:B.navy,stroke:B.blue,lw:1.5,r:4});
+  // eyes
+  const eyeC=emo==='sad'?B.muted:B.blue;
+  ctx.beginPath();ctx.arc(-9,-40,5,0,Math.PI*2);ctx.fillStyle=eyeC;ctx.fill();
+  ctx.beginPath();ctx.arc(9,-40,5,0,Math.PI*2);ctx.fillStyle=eyeC;ctx.fill();
+  // eye shine
+  ctx.beginPath();ctx.arc(-7,-42,2,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fill();
+  ctx.beginPath();ctx.arc(11,-42,2,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.6)';ctx.fill();
+  // mouth
+  ctx.strokeStyle=B.blue;ctx.lineWidth=2;
+  ctx.beginPath();
+  if(emo==='happy')ctx.arc(0,-26,7,0.2,Math.PI-.2);
+  else if(emo==='sad')ctx.arc(0,-20,7,Math.PI+.3,2*Math.PI-.3);
+  else{ctx.moveTo(-7,-24);ctx.lineTo(7,-24);}
+  ctx.stroke();
+
+  // body
+  rbox(-22,-14,44,30,{fill:B.pale,stroke:B.navy,lw:2.5,r:6});
+  ctx.beginPath();ctx.arc(-8,1,4,0,Math.PI*2);ctx.fillStyle=B.blue;ctx.fill();
+  ctx.beginPath();ctx.arc(6,1,4,0,Math.PI*2);ctx.fillStyle=B.green;ctx.fill();
+  // "BARCLAYS MODEL" tiny label
+  txt('MODEL',0,12,{size:8,color:B.navy,align:'center',weight:'700'});
+
+  // legs
+  ctx.strokeStyle=B.navy;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(-10,16);ctx.lineTo(-14,58);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(10,16);ctx.lineTo(14,58);ctx.stroke();
+
+  // arms
+  const al=arm||0;
+  ctx.beginPath();ctx.moveTo(-22,0);ctx.lineTo(-22-32*Math.cos(al),0-32*Math.sin(al*2));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(22,0);ctx.lineTo(22+32*Math.cos(al),0-32*Math.sin(al*2));ctx.stroke();
+
+  ctx.restore();
+}
+
+// ── HUMAN (LLM Agent character) ──
+function human(x,y,o={}){
+  const{s=1,emo='curious',a=1}=o;
+  ctx.save();ctx.globalAlpha*=a;ctx.translate(x,y);ctx.scale(s,s);
+  ctx.lineCap='round';
+
+  // shadow
+  ctx.beginPath();ctx.ellipse(0,66,16,5,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,57,93,.1)';ctx.fill();
+
+  // hair
+  ctx.beginPath();ctx.arc(0,-54,24,Math.PI,0);ctx.fillStyle=B.navy;ctx.fill();
+  // head
+  ctx.beginPath();ctx.arc(0,-54,22,0,Math.PI*2);
+  ctx.fillStyle='#FDDDB8';ctx.fill();ctx.strokeStyle=B.navy;ctx.lineWidth=2;ctx.stroke();
+  // eyes
+  ctx.fillStyle=B.navy;
+  ctx.beginPath();ctx.arc(-8,-58,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-58,3.5,0,Math.PI*2);ctx.fill();
+  // brows
+  ctx.strokeStyle=B.navy;ctx.lineWidth=2;
+  if(emo==='curious'){
+    ctx.beginPath();ctx.moveTo(-13,-67);ctx.quadraticCurveTo(-8,-72,-3,-66);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(3,-67);ctx.quadraticCurveTo(8,-72,13,-66);ctx.stroke();
+  }
+  // mouth
+  ctx.beginPath();
+  if(emo==='happy'){ctx.arc(0,-46,7,.2,Math.PI-.2);ctx.strokeStyle=B.navy;ctx.lineWidth=2;ctx.stroke();}
+  else{ctx.moveTo(-5,-46);ctx.quadraticCurveTo(0,-42,5,-46);ctx.strokeStyle=B.navy;ctx.lineWidth=2;ctx.stroke();}
+  // shirt (Barclays blue)
+  ctx.beginPath();ctx.moveTo(-14,-32);ctx.lineTo(14,-32);ctx.lineTo(18,20);ctx.lineTo(-18,20);ctx.closePath();
+  ctx.fillStyle=B.navy;ctx.fill();
+  // tie
+  ctx.beginPath();ctx.moveTo(-4,-32);ctx.lineTo(4,-32);ctx.lineTo(2,10);ctx.lineTo(0,16);ctx.lineTo(-2,10);ctx.closePath();
+  ctx.fillStyle=B.blue;ctx.fill();
+  // arms
+  ctx.strokeStyle=B.navy;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(-14,-20);ctx.lineTo(-34,-5);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(14,-20);ctx.lineTo(34,-5);ctx.stroke();
+  // legs
+  ctx.beginPath();ctx.moveTo(-8,20);ctx.lineTo(-12,62);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(8,20);ctx.lineTo(12,62);ctx.stroke();
+
+  ctx.restore();
+}
+
+// ── SPEECH BUBBLE ──
+function bubble(x,y,w,h,lines,o={}){
+  const{fill=B.white,border=B.navy,tc=B.ink,ts=17,tailDir='down',a=1}=o;
+  ctx.save();ctx.globalAlpha*=a;
+  shadow(x,y,w,h);
+  rbox(x,y,w,h,{fill,stroke:border,lw:2,r:14});
+  // tail
+  ctx.beginPath();
+  if(tailDir==='down'){ctx.moveTo(x+36,y+h);ctx.lineTo(x+22,y+h+22);ctx.lineTo(x+58,y+h+2);}
+  else{ctx.moveTo(x+36,y);ctx.lineTo(x+22,y-22);ctx.lineTo(x+58,y-2);}
+  ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=border;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle=tc;ctx.font=`600 ${ts}px Caveat`;ctx.textAlign='center';
+  (Array.isArray(lines)?lines:[lines]).forEach((l,i)=>ctx.fillText(l,x+w/2,y+ts*1.5+i*(ts+5)));
+  ctx.restore();
+}
+
+// ── MONITOR ──
+function monitor(x,y,w,h,rows,a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  // stand
+  ctx.fillStyle='#334';
+  ctx.fillRect(x+w/2-14,y+h,28,18);ctx.fillRect(x+w/2-28,y+h+18,56,7);
+  // bezel
+  rbox(x,y,w,h,{fill:'#1A1A2E',stroke:'#334',lw:3,r:12});
+  // screen
+  rbox(x+10,y+10,w-20,h-28,{fill:'#0D0F1A',r:6});
+  // status bar
+  rbox(x+10,y+10,w-20,22,{fill:B.navy,r:4});
+  txt('● BARCLAYS MODEL MONITORING',x+w/2,y+26,{size:12,color:B.blue,align:'center',weight:'700'});
+  rows.forEach(([t,c,sy])=>{
+    ctx.fillStyle=c||'#94a3b8';
+    ctx.font=`400 13px "Courier New", monospace`;ctx.textAlign='left';
+    ctx.fillText(t,x+16,y+sy);
+  });
+  ctx.restore();
+}
+
+// ── BLACKBOARD ──
+function board(x,y,w,h,a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  // wood frame
+  ctx.beginPath();ctx.roundRect(x-12,y-12,w+24,h+24,8);
+  ctx.fillStyle='#5C3D1E';ctx.fill();
+  // chalk ledge
+  ctx.fillStyle='#7B5233';ctx.fillRect(x-12,y+h+12,w+24,10);
+  // board surface
+  ctx.beginPath();ctx.roundRect(x,y,w,h,4);
+  ctx.fillStyle='#1E3A2A';ctx.fill();
+  // chalk dust specks
+  for(let i=0;i<20;i++){
+    ctx.fillStyle=`rgba(240,236,227,${Math.random()*.08})`;
+    ctx.fillRect(x+Math.random()*w,y+h-12,Math.random()*30+5,2);
+  }
+  ctx.restore();
+}
+
+// ── CLOCK ──
+function clock(x,y,r,ang,a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=B.white;ctx.fill();ctx.strokeStyle=B.navy;ctx.lineWidth=3;ctx.stroke();
+  // face ring
+  ctx.beginPath();ctx.arc(x,y,r-4,0,Math.PI*2);
+  ctx.strokeStyle=B.blue;ctx.lineWidth=1;ctx.stroke();
+  for(let i=0;i<12;i++){
+    const a2=i/12*Math.PI*2-Math.PI/2;
+    const inn=i%3===0?r-14:r-8;
+    ctx.beginPath();ctx.moveTo(x+Math.cos(a2)*inn,y+Math.sin(a2)*inn);
+    ctx.lineTo(x+Math.cos(a2)*(r-4),y+Math.sin(a2)*(r-4));
+    ctx.strokeStyle=i%3===0?B.navy:B.muted;ctx.lineWidth=i%3===0?2.5:1;ctx.stroke();
+  }
+  // hands
+  ctx.strokeStyle=B.navy;ctx.lineWidth=3.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x,y);
+  ctx.lineTo(x+Math.cos(ang-Math.PI/2)*r*.55,y+Math.sin(ang-Math.PI/2)*r*.55);ctx.stroke();
+  ctx.lineWidth=2;ctx.strokeStyle=B.blue;
+  ctx.beginPath();ctx.moveTo(x,y);
+  ctx.lineTo(x+Math.cos(ang*12-Math.PI/2)*r*.78,y+Math.sin(ang*12-Math.PI/2)*r*.78);ctx.stroke();
+  ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=B.red;ctx.fill();
+  ctx.restore();
+}
+
+// ── DATA TABLE CARD ──
+function tableCard(x,y,w,h,title,icon,colorTop,desc,a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  shadow(x,y,w,h,14);
+  rbox(x,y,w,h,{fill:B.white,stroke:colorTop+'44',lw:2,r:14});
+  // top stripe
+  rbox(x,y,w,60,{fill:colorTop,stroke:null,r:14});
+  rbox(x,y+46,w,14,{fill:colorTop,stroke:null,r:0});
+  txt(icon,x+w/2,y+26,{size:26,color:B.white,align:'center'});
+  txt(title,x+w/2,y+52,{size:19,color:B.white,align:'center',weight:'700'});
+  // description pills
+  desc.forEach((line,i)=>{
+    const ly=y+76+i*52;
+    rbox(x+12,ly,w-24,40,{fill:colorTop+'0D',stroke:colorTop+'33',lw:1.5,r:8});
+    txt(line,x+w/2,ly+26,{size:16,color:B.ink,align:'center',weight:'600'});
+  });
+  ctx.restore();
+}
+
+// ── THOUGHT ROW ──
+function thoughtRow(x,y,w,badge,badgeColor,lines,isLatest,a=1){
+  const h=lines.length<=2?74:96;
+  ctx.save();ctx.globalAlpha*=a;
+  if(isLatest){ctx.shadowColor=badgeColor+'44';ctx.shadowBlur=12;}
+  rbox(x,y,w,h,{fill:isLatest?badgeColor+'0D':B.white,stroke:badgeColor+(isLatest?'CC':'44'),lw:isLatest?2.5:1.5,r:12});
+  ctx.restore();
+  // badge pill
+  pill(x+10,y+10,120,26,badgeColor,badge,B.white,13);
+  lines.forEach((l,i)=>{
+    const isH=l.startsWith('→')||l.startsWith('✓');
+    txt(l,x+142,y+28+i*24,{size:isLatest?16:14,color:isH?badgeColor:B.slate,weight:isH?'700':'400'});
+  });
+}
+
+// ── CHECK ROW ──
+function checkRow(x,y,w,label,val,valColor,note,a=1){
+  ctx.save();ctx.globalAlpha*=a;
+  shadow(x,y,w,82,10);
+  rbox(x,y,w,82,{fill:B.white,stroke:'rgba(0,57,93,.06)',lw:1.5,r:10});
+  // check
+  ctx.strokeStyle=B.green;ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x+18,y+28);ctx.lineTo(x+27,y+40);ctx.lineTo(x+44,y+16);ctx.stroke();
+  txt(label,x+58,y+30,{size:20,color:B.ink,weight:'600'});
+  txt(val,x+w-18,y+30,{size:20,color:valColor,align:'right',weight:'700'});
+  txt(note,x+58,y+56,{size:14,color:B.muted});
+  ctx.restore();
+}
+
+// ── ROOT CAUSE CARD ──
+function rcCard(x,y,w,numLabel,numColor,titleTxt,bodyLines,stepRef,a=1){
+  const h=bodyLines.length*30+90;
+  ctx.save();ctx.globalAlpha*=a;
+  shadow(x,y,w,h,14);
+  rbox(x,y,w,h,{fill:B.white,stroke:numColor+'55',lw:2,r:14});
+  // left accent bar
+  ctx.fillStyle=numColor;ctx.beginPath();ctx.roundRect(x,y,6,h,[14,0,0,14]);ctx.fill();
+  // number badge
+  pill(x+14,y+14,90,28,numColor,numLabel,B.white,14);
+  // step ref
+  rbox(x+114,y+14,140,28,{fill:numColor+'22',stroke:numColor+'55',lw:1,r:14});
+  txt(stepRef,x+184,y+33,{size:12,color:numColor,align:'center',weight:'600'});
+  // title
+  txt(titleTxt,x+20,y+62,{size:18,color:B.ink,weight:'700'});
+  bodyLines.forEach((l,i)=>{
+    const isH=l.startsWith('→');
+    txt(l,x+20,y+90+i*30,{size:15,color:isH?numColor:B.slate,weight:isH?'600':'400'});
+  });
+  ctx.restore();
+}
+
+// ═══════════════════════════════
+// SCENES
+// ═══════════════════════════════
+const SCENES=[
+
+// ── 0: TITLE 0–6s ──
+{start:0,dur:6,title:'Intro',draw(st){
+  const p=ease(prog(0.2,.8,st));
+  // left navy panel
+  ctx.fillStyle=B.navy;ctx.fillRect(0,0,W*.38,H);
+  // right paper
+  ctx.fillStyle=B.paper;ctx.fillRect(W*.38,0,W*.62,H);
+  // blue diagonal accent — thinner, no overlap with text
+  ctx.beginPath();ctx.moveTo(W*.38-1,0);ctx.lineTo(W*.38+28,0);ctx.lineTo(W*.38,H);ctx.lineTo(W*.38-1,H);
+  ctx.fillStyle=B.blue;ctx.fill();
+
+  // EAGLE large
+  ctx.save();ctx.globalAlpha=p*.7;eagle(W*.19,H*.32,3.2);ctx.restore();
+  // BARCLAYS wordmark
+  ctx.save();ctx.globalAlpha=p;
+  txt('BARCLAYS',W*.19,H*.32+100,{size:32,color:B.white,align:'center',weight:'700'});
+  txt('Cards & Payments',W*.19,H*.32+136,{size:18,color:B.blue,align:'center'});
+  txt('Model Monitoring',W*.19,H*.32+164,{size:18,color:B.blue,align:'center'});
+  ctx.restore();
+
+  // right: title content — start further right to clear the diagonal
+  ctx.save();ctx.globalAlpha=ease(prog(.4,.8,st));
+  const rx=W*.44, rw=W*.52;
+  txt('LLM Model',rx+rw/2,H*.22,{size:Math.round(W/20),color:B.navy,align:'center',weight:'700'});
+  txt('vs',rx+rw/2,H*.22+Math.round(W/20)*1.2,{size:Math.round(W/24),color:B.blue,align:'center',weight:'400'});
+  txt('LLM Agent',rx+rw/2,H*.22+Math.round(W/20)*2.4,{size:Math.round(W/20),color:B.navy,align:'center',weight:'700'});
+
+  // subtitle line
+  ctx.strokeStyle=B.blue;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(rx+40,H*.47);ctx.lineTo(rx+rw-40,H*.47);ctx.stroke();
+
+  txt('Who finds the real root cause of a CSI alert?',rx+rw/2,H*.53,{size:20,color:B.slate,align:'center'});
+
+  // pills
+  const pw=rw*.44;
+  pill(rx,H*.60,pw,40,B.navy,'📉  REVL_BAL_MAX_12M  −18.7%',B.white,15);
+  pill(rx+rw-pw,H*.60,pw,40,B.red,'🚨  CSI = 0.287  ( > 0.25 )',B.white,15);
+  rbox(rx+rw/2-170,H*.72,340,38,{fill:B.pale,stroke:B.blue,lw:1.5,r:19});
+  txt('DEV: 202212   →   OOT: 202603',rx+rw/2,H*.72+25,{size:17,color:B.navy,align:'center',weight:'600'});
+
+  // characters
+  robot(rx+80,H*.88,{s:.7,a:ease(prog(.6,.6,st))});
+  human(rx+rw-80,H*.88,{s:.7,a:ease(prog(.7,.6,st))});
+  txt('LLM Model',rx+80,H*.88+50,{size:14,color:B.navy,align:'center'});
+  txt('LLM Agent',rx+rw-80,H*.88+50,{size:14,color:B.navy,align:'center'});
+  ctx.restore();
+}},
+
+// ── 1: ALERT 6–13s ──
+{start:6,dur:7,title:'⚠ CSI Alert',draw(st){
+  topbar('⚠  CSI Out-of-Tolerance Alert','REVL_BAL_MAX_12M needs investigation');
+  const p=ease(prog(.2,.7,st));
+  const cx=W/2, cy=H/2+28;
+
+  // clock — top left
+  clock(W*.1,H*.38,58,st/7*Math.PI*1.5,ease(prog(0,.5,st)));
+  txt('Time to',W*.1,H*.38+76,{size:16,color:B.slate,align:'center'});
+  txt('investigate',W*.1,H*.38+96,{size:16,color:B.slate,align:'center'});
+
+  // monitor — centre
+  const mw=Math.min(380,W*.32), mh=240;
+  monitor(cx-mw/2,cy-mh/2,mw,mh,[
+    ['',B.blue,42],
+    ['Var:  REVL_BAL_MAX_12M',B.white,58],
+    ['',B.blue,72],
+    ['Mean change:   −18.7%','#FFD93D',80],
+    ['CSI score:     0.287   > 0.25','#FF8A80',100],
+    ['',B.blue,118],
+    ['DEV period:    202212','#74B9FF',124],
+    ['OOT period:    202603','#74B9FF',144],
+    ['',B.blue,162],
+    ['No other data provided yet.','#475569',170],
+  ],p);
+
+  // robot right — worried
+  const rp=ease(prog(.4,.6,st));
+  robot(W*.82,cy+20,{s:1.1,emo:'sad',a:rp,arm:.8});
+  const bp=ease(prog(.9,.5,st));
+  if(bp>0) bubble(W*.72-160,cy-160,240,80,['CSI > 25%...','What\'s driving','this drop?'],{a:bp,ts:17,tailDir:'down'});
+}},
+
+// ── 2: MODEL TASK 13–20s ──
+{start:13,dur:7,title:'🤖 Model receives instructions',draw(st){
+  topbar('🤖  LLM Model Gets Its Prompt','Analyst defines the analysis dimensions');
+  const cy=H/2+40;
+
+  // board — left
+  const bw=W*.42, bh=H*.62, bx=W*.04, by=H*.2;
+  board(bx,by,bw,bh,ease(prog(0,.4,st)));
+  ctx.save();ctx.globalAlpha=ease(prog(.2,.4,st));
+  txt('ANALYZE THESE DIMENSIONS:',bx+bw/2,by+42,{size:22,color:'#F0ECD8',align:'center',weight:'700'});
+  // underline
+  ctx.strokeStyle='rgba(240,236,216,.3)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(bx+20,by+54);ctx.lineTo(bx+bw-20,by+54);ctx.stroke();
+  const dims=['1.   FICO score distribution','2.   Card product breakdown','3.   Raw variable: REVL_BAL_AMT','4.   Transaction behaviour'];
+  dims.forEach((d,i)=>{
+    const dp=ease(prog(.5+i*.13,.35,st));
+    ctx.globalAlpha=dp;
+    // chalk dot
+    ctx.beginPath();ctx.arc(bx+28,by+90+i*74,5,0,Math.PI*2);ctx.fillStyle='#FFD93D';ctx.fill();
+    txt(d,bx+46,by+96+i*74,{size:21,color:'#FFE082',weight:'600'});
+  });
+  ctx.globalAlpha=ease(prog(1.2,.4,st))*.4;
+  txt('( nothing else provided )',bx+bw/2,by+bh-22,{size:15,color:'#F0ECD8',align:'center'});
+  ctx.restore();
+
+  // robot — right
+  const rp=ease(prog(.3,.6,st));
+  robot(W*.78,cy,{s:1.2,emo:'ok',a:rp});
+  const sp=ease(prog(.9,.4,st));
+  if(sp>0) bubble(W*.62,by+10,260,78,['Got it. I\'ll analyze','exactly these 4','angles only.'],{fill:B.pale,border:B.blue,tc:B.navy,ts:18,tailDir:'down',a:sp});
+
+  // label
+  txt('LLM Model',W*.78,cy+86,{size:18,color:B.navy,align:'center',weight:'700'});
+}},
+
+// ── 3: MODEL OUTPUT 20–30s ──
+{start:20,dur:10,title:'🤖 Model checks each box',draw(st){
+  topbar('🤖  Model Analysis Output','One dimension at a time — no deviation');
+  const cx=W/2;
+
+  // paper card
+  const cw=W*.72, cx0=cx-cw/2, cy0=H*.14;
+  shadow(cx0,cy0,cw,H*.76,14);
+  rbox(cx0,cy0,cw,H*.76,{fill:B.white,stroke:B.pale,lw:2,r:14});
+  // header bar
+  rbox(cx0,cy0,cw,56,{fill:B.navy,stroke:null,r:14});
+  rbox(cx0,cy0+42,cw,14,{fill:B.navy,stroke:null,r:0});
+  txt('MODEL ANALYSIS OUTPUT',cx,cy0+34,{size:22,color:B.white,align:'center',weight:'700'});
+  // blue accent line
+  ctx.fillStyle=B.blue;ctx.fillRect(cx0,cy0+56,cw,3);
+
+  const rows=[
+    ['FICO Distribution','Mean FICO:  722 → 677  (−45 pts)',B.red,'→ reported as prompted, no investigation'],
+    ['Card Product Mix','Xbox −27.9%,   HAW −9.4%',B.amber,'→ product split extracted, done'],
+    ['REVL_BAL_AMT Trend','Avg balance:  $1,425 → $1,158',B.red,'→ raw variable mean noted, no context'],
+    ['Transaction Behaviour','Purchases:  19.1 → 11.6 / month',B.amber,'→ frequency drop recorded, done'],
+  ];
+  rows.forEach(([label,val,vc,note],i)=>{
+    const rp=ease(prog(i*1.4+.3,.6,st));
+    checkRow(cx0+16,cy0+72+i*100,cw-32,label,val,vc,note,rp);
+  });
+
+  // verdict
+  const vp=ease(prog(7.5,.8,st));
+  if(vp>0){
+    rbox(cx0+16,cy0+H*.76-64,cw-32,52,{fill:'#F0FDF4',stroke:B.green+'88',lw:2,r:10,a:vp});
+    txt('✓   All 4 prompted dimensions checked.  "FICO dropped, products declined, balances fell."',
+      cx,cy0+H*.76-30,{size:17,color:'#166534',align:'center',weight:'600',alpha:vp});
+  }
+
+  // robot small right
+  robot(W*.92,H*.55,{s:.85,emo:'happy',a:ease(prog(0,.5,st))});
+}},
+
+// ── 4: BLIND SPOTS 30–38s ──
+{start:30,dur:8,title:'🤖 What the Model missed',draw(st){
+  topbar('🤖  Blind Spots — NOT IN PROMPT','The model only knows what it was told');
+
+  // left: never checked panel
+  const pw=W*.54, px=W*.04, py=H*.14, ph=H*.78;
+  shadow(px,py,pw,ph,14);
+  rbox(px,py,pw,ph,{fill:B.white,stroke:B.red+'66',lw:2.5,r:14});
+  // dashed border overlay
+  ctx.strokeStyle=B.red+'44';ctx.lineWidth=2;ctx.setLineDash([10,7]);
+  ctx.beginPath();ctx.roundRect(px,py,pw,ph,14);ctx.stroke();ctx.setLineDash([]);
+  // header
+  rbox(px,py,pw,56,{fill:B.red,stroke:null,r:14});
+  rbox(px,py+42,pw,14,{fill:B.red,stroke:null,r:0});
+  txt('❌   NEVER INVESTIGATED',px+pw/2,py+34,{size:24,color:B.white,align:'center',weight:'700'});
+
+  const blinds=[
+    ['WHY did FICO fall?','Macro APR effect or natural cohort aging?'],
+    ['Is the −18.7% real?','Or a composition artefact from account exits?'],
+    ['Account exit surge?','Chargeoff purge distorting the population mean?'],
+    ['Seasonal baseline?','DEV = Dec holiday peak  vs  OOT = Mar normalised'],
+    ['Macro rate context?','Fed APR 22–28% for 27 months — behaviour impact?'],
+  ];
+  blinds.forEach(([title,sub],i)=>{
+    const bp=ease(prog(i*.85+.4,.5,st));
+    ctx.save();ctx.globalAlpha=bp;
+    const by=py+70+i*98;
+    rbox(px+12,by,pw-24,82,{fill:B.red+'0A',stroke:B.red+'33',lw:1.5,r:10});
+    // X icon
+    ctx.strokeStyle=B.red;ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(px+26,by+20);ctx.lineTo(px+44,by+38);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px+44,by+20);ctx.lineTo(px+26,by+38);ctx.stroke();
+    txt(title,px+58,by+28,{size:20,color:B.ink,weight:'700'});
+    txt(sub,px+58,by+56,{size:15,color:B.slate});
+    ctx.restore();
+  });
+
+  // robot right — shrug
+  const rp=ease(prog(.2,.5,st));
+  robot(W*.82,H*.48,{s:1.1,emo:'sad',a:rp,arm:1.0});
+  const bp=ease(prog(.5,.5,st));
+  if(bp>0) bubble(W*.64,H*.14,300,76,['"Not in my prompt...','so I never checked it."'],
+    {fill:B.pale,border:B.navy,tc:B.navy,ts:18,tailDir:'down',a:bp});
+
+  // stamp
+  const sp=ease(prog(6,.8,st));
+  if(sp>0){
+    ctx.save();ctx.globalAlpha=sp;ctx.translate(W*.79,H*.76);ctx.rotate(-.06);
+    ctx.strokeStyle=B.red;ctx.lineWidth=5;
+    ctx.beginPath();ctx.roundRect(-148,-28,296,56,6);ctx.stroke();
+    txt('NOT IN PROMPT',0,10,{size:34,color:B.red,align:'center',weight:'700'});
+    ctx.restore();
+  }
+}},
+
+// ── 5: AGENT SETUP 38–46s ──
+{start:38,dur:8,title:'🧠 Agent receives data access',draw(st){
+  topbar('🧠  LLM Agent — Full Data Access','No constraints. Self-directed investigation.');
+  const cy=H/2+40;
+
+  // 3 table cards — evenly spaced
+  const cw=W*.27, gap=W*.03, startX=W*.04;
+  const sources=[
+    {title:'ASP Table', icon:'📋', color:B.navy, delay:.2,
+     rows:['Account & product info','Credit & balance data','Target variable']},
+    {title:'Transaction Table', icon:'💳', color:B.mid, delay:.9,
+     rows:['Purchase history','Spend amount & frequency','Merchant & wallet data']},
+    {title:'Seasonality & Macro', icon:'📈', color:B.purple, delay:1.6,
+     rows:['Fed rate environment','Holiday & paydown cycles','Consumer behaviour index']},
+  ];
+  sources.forEach((s,i)=>{
+    const sx=startX+i*(cw+gap);
+    const dp=ease(prog(s.delay,.6,st));
+    tableCard(sx,H*.14,cw,H*.58,s.title,s.icon,s.color,s.rows,dp);
+    // arrow down to agent
+    const ap=ease(prog(s.delay+1.4,.7,st));
+    if(ap>0){
+      ctx.save();ctx.globalAlpha=ap;ctx.strokeStyle=s.color;ctx.lineWidth=2.5;ctx.setLineDash([6,5]);
+      const ax=sx+cw/2;
+      ctx.beginPath();ctx.moveTo(ax,H*.14+H*.56+8);ctx.lineTo(ax,H*.82);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=s.color;
+      ctx.beginPath();ctx.moveTo(ax,H*.82+14);ctx.lineTo(ax-8,H*.82);ctx.lineTo(ax+8,H*.82);ctx.closePath();ctx.fill();
+      ctx.restore();
+    }
+  });
+
+  // agent at bottom centre
+  const hp=ease(prog(2.2,.6,st));
+  human(W/2,H*.88,{s:1.15,emo:'curious',a:hp});
+  txt('LLM Agent',W/2,H*.88+60,{size:18,color:B.navy,align:'center',weight:'700'});
+
+  // speech
+  const sp=ease(prog(3.0,.6,st));
+  if(sp>0) bubble(W*.58,H*.55,280,72,['"3 data sources!','Let me investigate','my own way."'],
+    {fill:B.pale,border:B.navy,tc:B.navy,ts:16,tailDir:'down',a:sp});
+}},
+
+// ── 6: AGENT THINKS 46–62s ──
+{start:46,dur:16,title:'🧠 Agent reasons step-by-step',draw(st){
+  topbar('🧠  Agent Investigation — Live Reasoning','Iterative queries, re-questioning, discovery');
+
+  // agent left column — fixed
+  human(W*.07,H*.56,{s:.9,emo:'curious',a:1});
+  // animated dots
+  [0,1,2].forEach(i=>{
+    const pulse=.5+.5*Math.sin(st*3+i*1.2);
+    ctx.save();ctx.globalAlpha=pulse;
+    ctx.beginPath();ctx.arc(W*.07+i*18-18,H*.3,5+i*2,0,Math.PI*2);
+    ctx.fillStyle=B.blue;ctx.fill();ctx.restore();
+  });
+  txt('LLM Agent',W*.07,H*.56+60,{size:15,color:B.navy,align:'center',weight:'600'});
+
+  const thoughts=[
+    {delay:.3, color:B.blue,   step:'Query 1',
+     lines:['Queried ASP + Txn tables: 5,000 accounts confirmed.',
+             'REVL_BAL_MAX_12M: mean $1,425 → $1,158. Verifying −18.7%.',
+             '→ Starting decomposition — what\'s in these accounts?']},
+    {delay:2.8, color:B.amber, step:'Query 2  ⚠',
+     lines:['ASP table: zero-balance accounts UP 220%.',
+             'Chargeoff flag confirms mass exit — population shrank!',
+             '→ Mean drop = composition artefact.  ↩  Re-framing...  RC #1 detected!']},
+    {delay:5.8, color:B.blue,  step:'Query 3',
+     lines:['Filtered to ACTIVE accounts (with balance):',
+             'REVL_BAL_MAX_12M actually UP 6.7% for survivors.',
+             '→ Surviving customers grew balances. Attrition drove the average down.']},
+    {delay:8.8, color:B.purple,step:'Query 4  ⚠',
+     lines:['Seasonality table: DEV = Dec 2022 (holiday spend peak).',
+             'OOT = Mar 2026 (post-paydown, balances structurally lower).',
+             '→ Baseline mismatch inflates CSI.  ↩  RC #2 detected!']},
+    {delay:11.8,color:B.green, step:'Query 5  ⚠',
+     lines:['Macro table: Fed held 22–28% APR through 2023–2025.',
+             'Txn table: fewer purchases, bigger ticket sizes → wallet rationalised.',
+             '→ Spend on premium cards → REVL_BAL_MAX inflated by max.  RC #3 detected!']},
+    {delay:14.2,color:B.navy,  step:'✓  Complete',
+     lines:['3 root causes confirmed with cross-table evidence.',
+             'No model error — external macro + seasonal + attrition.',
+             '→ RECOMMENDATION: recalibrate baseline. Monitor FICO separately.']},
+  ];
+
+  const visible=thoughts.filter(th=>st>=th.delay);
+  const toShow=visible.slice(Math.max(0,visible.length-4));
+  const rowH=visible.length>0&&visible[visible.length-1].lines.length>2?96:80;
+  const totalH=toShow.length*rowH+(toShow.length-1)*8;
+  const startY=Math.max(H*.12,(H*.12+H*.82)/2-totalH/2);
+  const rx=W*.14, rw=W*.84;
+
+  toShow.forEach((th,idx)=>{
+    const age=st-th.delay;
+    const fIn=ease(clamp(age/.45,0,1));
+    const isLast=idx===toShow.length-1;
+    thoughtRow(rx,startY+idx*(rowH+8),rw,th.step,th.color,th.lines,isLast,isLast?fIn:(fIn*.45));
+  });
+
+  // progress pill
+  if(visible.length>0){
+    pill(W*.14,H*.88,160,32,visible[visible.length-1].color,visible[visible.length-1].step,B.white,14);
+  }
+}},
+
+// ── 7: AGENT CONCLUSIONS 62–70s ──
+{start:62,dur:8,title:'🧠 Agent — Root Cause Summary',draw(st){
+  topbar('🧠  LLM Agent — Root Cause Summary','3 causes identified with data evidence');
+
+  human(W*.93,H*.52,{s:.9,emo:'happy',a:ease(prog(0,.4,st))});
+
+  const rcs=[
+    {delay:.4, color:B.amber,  num:'RC #1', stepRef:'→ Query 2',
+     title:'Composition Change — Chargeoff Attrition',
+     body:['Zero-balance accounts UP 220%: bad accounts exited via chargeoff.',
+           'Active survivors: REVL_BAL_MAX_12M actually UP 6.7%.',
+           '→ Overall mean drop is a mathematical artefact, not real behaviour shift.']},
+    {delay:2.6, color:B.purple,num:'RC #2', stepRef:'→ Query 4',
+     title:'Seasonal Baseline Wedge',
+     body:['DEV = Dec 2022: holiday spend peak — balances artificially elevated.',
+           'OOT = Mar 2026: post-holiday paydown — structurally lower.',
+           '→ CSI overstates true drift. Baseline recalibration required.']},
+    {delay:4.8, color:B.green, num:'RC #3', stepRef:'→ Query 5',
+     title:'Wallet Rationalisation & Spend Concentration',
+     body:['Macro APR 22–28%: consumers cut frequency, raised ticket size.',
+           'Premium card consolidation → REVL_BAL_MAX_12M right-skewed.',
+           '→ Max metric inflated by fewer larger transactions. Not true growth.']},
+  ];
+
+  const cw=W*.86, cx0=W*.04;
+  rcs.forEach((f,i)=>{
+    rcCard(cx0,H*.12+i*168,cw,f.num,f.color,f.title,f.body,f.stepRef,ease(prog(f.delay,.6,st)));
+  });
+}},
+
+// ── 8: FICO SPOTLIGHT 70–78s ──
+{start:70,dur:8,title:'🔬 The FICO Difference',draw(st){
+  topbar('🔬  FICO: Same Signal — Different Depth','A concrete example of model vs agent reasoning');
+
+  const mid=W/2;
+  // divider
+  ctx.strokeStyle=B.pale;ctx.lineWidth=2;ctx.setLineDash([12,8]);
+  ctx.beginPath();ctx.moveTo(mid,H*.1);ctx.lineTo(mid,H*.95);ctx.stroke();ctx.setLineDash([]);
+  // VS badge
+  pill(mid-30,H*.47,60,36,B.navy,'VS',B.white,18);
+
+  // LEFT — MODEL
+  const lp=ease(prog(.2,.8,st));
+  ctx.save();ctx.globalAlpha=lp;
+  robot(W*.18,H*.27,{s:.95,emo:'ok'});
+  txt('🤖  LLM Model',W*.04+W*.43/2,H*.1+30,{size:22,color:B.navy,align:'center',weight:'700'});
+
+  shadow(W*.04,H*.38,W*.43,H*.52,14);
+  rbox(W*.04,H*.38,W*.43,H*.52,{fill:B.white,stroke:B.navy+'44',lw:2,r:14});
+  rbox(W*.04,H*.38,W*.43,54,{fill:B.navy,stroke:null,r:14});
+  rbox(W*.04,H*.38+40,W*.43,14,{fill:B.navy,stroke:null,r:0});
+  ctx.fillStyle=B.blue;ctx.fillRect(W*.04,H*.38+54,W*.43,3);
+  txt('Prompted dimension: FICO',W*.04+W*.43/2,H*.38+34,{size:19,color:B.white,align:'center',weight:'700'});
+
+  txt('722 → 677',W*.04+W*.43/2,H*.38+106,{size:48,color:B.red,align:'center',weight:'700'});
+  txt('( −45 pts )',W*.04+W*.43/2,H*.38+148,{size:20,color:B.slate,align:'center'});
+  ctx.strokeStyle=B.pale;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(W*.06,H*.38+166);ctx.lineTo(W*.04+W*.43-18,H*.38+166);ctx.stroke();
+  ['Reported: mean FICO declined.','No investigation into WHY.','No link to macro or APR data.',
+   'Didn\'t check if population-wide.'].forEach((l,i)=>
+    txt(l,W*.04+W*.43/2,H*.38+190+i*26,{size:17,color:i<2?B.ink:B.muted,align:'center'}));
+  // observation stamp
+  ctx.translate(W*.04+W*.43/2,H*.38+H*.52-24);ctx.rotate(-.04);
+  ctx.strokeStyle=B.red;ctx.lineWidth=3;
+  ctx.beginPath();ctx.roundRect(-130,-18,260,36,6);ctx.stroke();
+  txt('observation only',0,8,{size:19,color:B.red,align:'center',weight:'700'});
+  ctx.restore();
+
+  // RIGHT — AGENT
+  const rp=ease(prog(.6,.8,st));
+  ctx.save();ctx.globalAlpha=rp;
+  human(W*.82,H*.27,{s:.95,emo:'happy'});
+  txt('🧠  LLM Agent',W*.53+W*.43/2,H*.1+30,{size:22,color:B.navy,align:'center',weight:'700'});
+
+  shadow(W*.53,H*.38,W*.43,H*.52,14);
+  rbox(W*.53,H*.38,W*.43,H*.52,{fill:B.white,stroke:B.green+'55',lw:2,r:14});
+  rbox(W*.53,H*.38,W*.43,54,{fill:B.green,stroke:null,r:14});
+  rbox(W*.53,H*.38+40,W*.43,14,{fill:B.green,stroke:null,r:0});
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(W*.53,H*.38+54,W*.43,3);
+  txt('Queried macro table unprompted',W*.53+W*.43/2,H*.38+34,{size:19,color:B.white,align:'center',weight:'700'});
+
+  txt('722 → 677',W*.53+W*.43/2,H*.38+106,{size:48,color:B.red,align:'center',weight:'700'});
+  txt('Every single borrower  ~−45 pts',W*.53+W*.43/2,H*.38+148,{size:18,color:B.green,align:'center',weight:'700'});
+  ctx.strokeStyle=B.pale;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(W*.55,H*.38+166);ctx.lineTo(W*.53+W*.43-18,H*.38+166);ctx.stroke();
+  ['APR 22–28% for 27 months.',
+   '→ Utilization rose → FICO fell for ALL.',
+   'SYSTEMATIC — not a root cause of CSI.',
+   'Flagged as risk signal separately.'].forEach((l,i)=>{
+    const isH=l.startsWith('→')||l.startsWith('SYSTEMATIC');
+    txt(l,W*.53+W*.43/2,H*.38+190+i*26,{size:17,color:isH?B.green:i>1?B.slate:B.ink,align:'center',weight:isH?'700':'400'});
+  });
+  rbox(W*.53+40,H*.38+H*.52-50,W*.43-80,38,{fill:B.green,stroke:null,r:10});
+  txt('Recalibrate baseline — no retrain needed',W*.53+W*.43/2,H*.38+H*.52-24,{size:16,color:B.white,align:'center',weight:'700'});
+  ctx.restore();
+}},
+
+// ── 9: FINALE 78–85s ──
+{start:78,dur:7,title:'📋 The Verdict',draw(st){
+  topbar('📋  The Verdict','LLM Model vs LLM Agent for CSI root cause analysis');
+  const lp=ease(prog(0,.65,st)), rp=ease(prog(.45,.65,st));
+  const cw=(W-W*.06*3)/2, lx=W*.03, rx=lx+cw+W*.03;
+  const cy0=H*.12, ch=H*.78;
+
+  // LEFT card
+  ctx.save();ctx.globalAlpha=lp;
+  shadow(lx,cy0,cw,ch,14);
+  rbox(lx,cy0,cw,ch,{fill:B.white,stroke:B.navy+'55',lw:2,r:14});
+  rbox(lx,cy0,cw,62,{fill:B.navy,stroke:null,r:14});rbox(lx,cy0+48,cw,14,{fill:B.navy,r:0});
+  ctx.fillStyle=B.blue;ctx.fillRect(lx,cy0+62,cw,3);
+  robot(lx+cw*.5,cy0-36,{s:.7,emo:'ok'});
+  txt('🤖  LLM Model',lx+cw/2,cy0+38,{size:24,color:B.white,align:'center',weight:'700'});
+  const lrows=[
+    ['📋','Input','4 fixed dimensions from analyst prompt'],
+    ['✔','Method','Each box checked independently'],
+    ['📊','FICO','Mean dropped 45 pts — reported'],
+    ['📊','Product','Xbox/HAW declined — reported'],
+    ['📊','Balance','REVL_BAL_AMT fell — reported'],
+    ['📊','Txn','Purchase frequency down — reported'],
+    ['💬','Output','"Dimensions checked. Done."'],
+    ['❌','Root cause','Unknown — not identified'],
+  ];
+  lrows.forEach(([icon,label,detail],i)=>{
+    const ry=cy0+80+i*66;
+    if(i%2===0){ctx.fillStyle='rgba(0,57,93,.03)';ctx.fillRect(lx+8,ry-8,cw-16,58);}
+    txt(icon,lx+24,ry+20,{size:18,align:'center'});
+    txt(label,lx+50,ry+14,{size:15,color:B.navy,weight:'700'});
+    txt(detail,lx+50,ry+36,{size:15,color:i>=6?B.red:B.slate});
+  });
+  ctx.restore();
+
+  // RIGHT card
+  ctx.save();ctx.globalAlpha=rp;
+  shadow(rx,cy0,cw,ch,14);
+  rbox(rx,cy0,cw,ch,{fill:B.white,stroke:B.green+'55',lw:2,r:14});
+  rbox(rx,cy0,cw,62,{fill:B.green,stroke:null,r:14});rbox(rx,cy0+48,cw,14,{fill:B.green,r:0});
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(rx,cy0+62,cw,3);
+  human(rx+cw*.5,cy0-36,{s:.7,emo:'happy'});
+  txt('🧠  LLM Agent',rx+cw/2,cy0+38,{size:24,color:B.white,align:'center',weight:'700'});
+  const rrows=[
+    ['📂','Input','ASP table + Txn table + Macro/Seasonal'],
+    ['🔍','Method','Self-directed 5-query investigation'],
+    ['🟡','RC #1','Composition change — chargeoff attrition'],
+    ['🟣','RC #2','Seasonal baseline wedge (Dec vs Mar)'],
+    ['🟢','RC #3','Wallet rationalisation & spend concentration'],
+    ['💡','FICO','Systematic macro shift — flagged separately'],
+    ['💬','Output','"3 root causes with cross-table evidence."'],
+    ['✅','Action','Recalibrate baseline. Monitor FICO.'],
+  ];
+  rrows.forEach(([icon,label,detail],i)=>{
+    const ry=cy0+80+i*66;
+    if(i%2===0){ctx.fillStyle='rgba(39,174,96,.04)';ctx.fillRect(rx+8,ry-8,cw-16,58);}
+    txt(icon,rx+24,ry+20,{size:18,align:'center'});
+    txt(label,rx+50,ry+14,{size:15,color:B.green,weight:'700'});
+    txt(detail,rx+50,ry+36,{size:15,color:i>=6?B.green:B.slate,weight:i>=6?'600':'400'});
+  });
+  ctx.restore();
+}},
+
+];
+
+// ═══════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════
+function curScene(){for(let i=SCENES.length-1;i>=0;i--)if(T>=SCENES[i].start)return i;return 0;}
+
+function frame(ts){
+  if(!lastTs)lastTs=ts;
+  const dt=(ts-lastTs)/1000;lastTs=ts;
+  if(!paused)T=Math.min(T+dt,TOTAL);
+  clr();
+  const si=curScene(),sc=SCENES[si];
+  sc.draw(T-sc.start);
+  // subtle blend with next
+  if(si<SCENES.length-1){
+    const ns=SCENES[si+1];
+    if(T>=ns.start-.4){
+      const bl=clamp((T-ns.start+.4)/.4,0,1);
+      ctx.save();ctx.globalAlpha=bl;clr();ns.draw(0);ctx.restore();
+    }
+  }
+  // ui update
+  const pct=(T/TOTAL*100).toFixed(1);
+  document.getElementById('tl-fill').style.width=pct+'%';
+  const m=Math.floor(T/60),s=Math.floor(T%60);
+  document.getElementById('lbl').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  document.getElementById('stitle').textContent=sc.title||'';
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i===si));
+  if(T<TOTAL)requestAnimationFrame(frame);
+  else{paused=true;document.getElementById('playBtn').textContent='▶';}
+}
+
+// controls
+document.getElementById('playBtn').addEventListener('click',()=>{
+  if(T>=TOTAL){T=0;paused=false;lastTs=null;requestAnimationFrame(frame);}
+  else{paused=!paused;document.getElementById('playBtn').textContent=paused?'▶':'⏸';
+    if(!paused){lastTs=null;requestAnimationFrame(frame);}}
+});
+document.getElementById('rstBtn').addEventListener('click',()=>{
+  T=0;paused=false;lastTs=null;document.getElementById('playBtn').textContent='⏸';requestAnimationFrame(frame);
+});
+document.getElementById('tl-wrap').addEventListener('click',e=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  T=(e.clientX-r.left)/r.width*TOTAL;lastTs=null;
+  if(paused){paused=false;document.getElementById('playBtn').textContent='⏸';requestAnimationFrame(frame);}
+});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();document.getElementById('playBtn').click();}
+  if(e.code==='KeyR')document.getElementById('rstBtn').click();
+  if(e.code==='ArrowRight'){T=Math.min(T+4,TOTAL);lastTs=null;}
+  if(e.code==='ArrowLeft'){T=Math.max(T-4,0);lastTs=null;}
+});
+
+// dots
+const dc=document.getElementById('dots');
+SCENES.forEach((sc,i)=>{
+  const d=document.createElement('div');d.className='dot';d.title=sc.title;
+  d.addEventListener('click',()=>{T=sc.start+.01;lastTs=null;paused=false;
+    document.getElementById('playBtn').textContent='⏸';requestAnimationFrame(frame);});
+  dc.appendChild(d);
+});
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
